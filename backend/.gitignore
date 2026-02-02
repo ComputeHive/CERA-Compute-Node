@@ -1,0 +1,6 @@
+scripts/release*
+scripts/firecracker
+scripts/vmlinux
+scripts/ubuntu-*
+scripts/v.sock
+scripts/vm_manager.sh
