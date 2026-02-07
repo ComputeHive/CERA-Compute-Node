@@ -1,4 +1,4 @@
-import LoginView from '@renderer/components/views/LoginView'
+import DependenciesView from '@renderer/components/views/DependenciesView'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({
@@ -10,7 +10,7 @@ function MainPage(): React.ReactElement {
 
   return (
     <main className="bg-base w-screen h-screen flex items-center justify-center overflow-auto ">
-      <LoginView />
+      <DependenciesView />
     </main>
   )
 }
