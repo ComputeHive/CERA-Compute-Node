@@ -13,6 +13,8 @@
   --color-success: #1e7f43;
   --color-error: #c62828;
   --color-success-back: #d0f9d1;
+  --color-on-primary: #1f2937;
+  --color-on-seconary: #8a93a3;
 }
 
 *,
@@ -36,4 +38,11 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.server-background {
+  background: url("modern-server-room-with-white-servers-free-photo.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: right;
 }

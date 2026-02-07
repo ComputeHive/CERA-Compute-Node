@@ -17,13 +17,13 @@ export default function LoginForm(): React.JSX.Element {
     console.log(data)
   }
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
-      <Input placeholder="test@gmail.com" {...register('Email')} error={String(errors['Email'])} />
-      <Input
-        placeholder="************"
-        {...register('Password')}
-        error={String(errors['Password'])}
-      />
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      className="flex flex-col items-start justify-center gap-4 w-full"
+    >
+      <Input placeholder="test@gmail.com" {...register('Email')} error={errors['Email']} />
+      <Input placeholder="************" {...register('Password')} error={errors['Password']} />
       <Button type="submit" disabled={isSubmitting}>
         Sign in
       </Button>

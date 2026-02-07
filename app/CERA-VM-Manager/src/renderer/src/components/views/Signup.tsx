@@ -17,15 +17,23 @@ export default function SignupForm(): React.JSX.Element {
     console.log(data)
   }
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
-      <Input placeholder="johndoe" {...register('Username')} error={String(errors.Username)} />
-      <Input placeholder="test@gmail.com" {...register('Email')} error={String(errors.Email)} />
-      <Input placeholder="************" {...register('Password')} error={String(errors.Password)} />
-      <Input
-        placeholder="************"
-        {...register('Repeat Password')}
-        error={String(errors['Repeat Password'])}
-      />
+    <form
+      className="flex flex-col items-start justify-center gap-4 w-full"
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+    >
+      <article className="flex justify-between items-center w-full">
+        <Input placeholder="johndoe" {...register('Username')} error={errors.Username} />
+        <Input placeholder="test@gmail.com" {...register('Email')} error={errors.Email} />
+      </article>
+      <article className="flex justify-between items-center w-full">
+        <Input placeholder="************" {...register('Password')} error={errors.Password} />
+        <Input
+          placeholder="************"
+          {...register('Repeat Password')}
+          error={errors['Repeat Password']}
+        />
+      </article>
       <Button type="submit" disabled={isSubmitting}>
         Sign up
       </Button>

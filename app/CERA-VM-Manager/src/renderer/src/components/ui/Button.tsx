@@ -7,6 +7,14 @@ const buttonVariants = cva(
     variants: {
       intent: {
         primary: ['bg-active', 'text-surface'],
+        link: [
+          'bg-transparent',
+          'underline',
+          'text-on-primary',
+          'text-xl',
+          'hover:text-on-secondary',
+          'border-none'
+        ],
         success: ['bg-success-back', 'text-sucess', 'border-success'],
         error: ['bg-error', 'text-surface']
       },
