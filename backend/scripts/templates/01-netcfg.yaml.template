@@ -1,0 +1,12 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: no
+      addresses: [{{VM_IP}}/24]
+      routes:
+        - to: default
+          via: {{TAP_IP}}
+      nameservers:
+        addresses: [8.8.8.8, 1.1.1.1]

@@ -1,0 +1,12 @@
+FROM ubuntu:22.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y systemd systemd-sysv udev iproute2 net-tools curl openssh-server nano passwd kmod netplan.io
+
+RUN echo 'root:root' | chpasswd
+
+RUN systemctl enable serial-getty@ttyS0.service
+
+COPY 01-netcfg.yaml /etc/netplan/01-netcfg.yaml
+
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*

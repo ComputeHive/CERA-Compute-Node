@@ -1,0 +1,29 @@
+{
+  "boot-source": {
+    "kernel_image_path": "{{KERNEL_PATH}}",
+    "boot_args": "{{KERNEL_BOOT_ARGS}}"
+  },
+  "drives": [
+    {
+      "drive_id": "rootfs",
+      "path_on_host": "{{ROOTFS_NAME}}",
+      "is_root_device": true,
+      "is_read_only": false
+    }
+  ],
+  "network-interfaces": [
+    {
+      "iface_id": "eth0",
+      "guest_mac": "{{VM_MAC}}",
+      "host_dev_name": "{{TAP_DEV}}"
+    }
+  ],
+  "machine-config": {
+    "vcpu_count": {{VCPU_COUNT}},
+    "mem_size_mib": {{MEM_MB}}
+  },
+  "vsock": {
+    "guest_cid": {{GUEST_CID}},
+    "uds_path": "{{UDS_PATH}}"
+  }
+}
