@@ -1,1 +1,0 @@
-vm_manager ALL=NOPASSWD: /usr/local/bin/firecracker, /usr/bin/debootstrap, /sbin/iptables, /usr/bin/ip

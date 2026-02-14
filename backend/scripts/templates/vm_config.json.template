@@ -9,6 +9,12 @@
       "path_on_host": "{{ROOTFS_NAME}}",
       "is_root_device": true,
       "is_read_only": false
+    },
+    {
+      "drive_id": "datadisk",
+      "path_on_host": "{{DATA_DISK_PATH}}",
+      "is_root_device": false,
+      "is_read_only": false
     }
   ],
   "network-interfaces": [

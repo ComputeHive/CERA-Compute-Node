@@ -3,20 +3,15 @@ set -euo pipefail
 
 INPUT_FLAGS=("$@") # Capture all arguments as array
 
-ARCH="$(uname -m)"
-FC_URL="https://github.com/firecracker-microvm/firecracker/releases/download/v1.7.0/firecracker-v1.7.0-${ARCH}.tgz"
-FC_DIR="/usr/local/bin"
-DOCKER_URL="https://download.docker.com/linux/ubuntu"
 TOOLS=("curl" "docker" "ip" "iptables" "mkfs.ext4" "debootstrap" "firecracker" "kvm")
-KEY_DIR="/etc/apt/keyrings"
-DOCKER_GPG_URL="${KEY_DIR}/docker.gpg"
-DOCKER_APT_REPO_DIR="/etc/apt/sources.list.d/docker.list"
-APP_USER="vm_manager"
 
 if [ "${#INPUT_FLAGS[@]}" -lt "${#TOOLS[@]}" ]; then
     echo "Error: Expected ${#TOOLS[@]} binary flags, got ${#INPUT_FLAGS[@]}."
     exit 1
 fi
+
+CONFIG_DIR="config"
+source $CONFIG_DIR/config.sh
 
 install_docker() {
     sudo apt install -y ca-certificates gnupg apt-transport-https
@@ -54,8 +49,17 @@ EOF
     sudo visudo -cf /etc/sudoers.d/${APP_USER}
 }
 
+create_cera_directories() {
+    sudo mkdir -p "$CERA_DATA_DIR" "$CERA_IMG_DIR" "$CERA_DISKS_DIR" "$CERA_RUN_DIR" "$MOUNT_POINT"
+    sudo chown "$APP_USER":"$APP_USER" "$CERA_DATA_DIR" "$CERA_IMG_DIR"
+    # Disks dir: only root can list/access – prevents host user from reading VM data
+    sudo chown root:root "$CERA_DISKS_DIR"
+    sudo chmod 0700 "$CERA_DISKS_DIR"
+}
+
 sudo apt update
 create_vm_manager_user
+create_cera_directories
 for i in "${!TOOLS[@]}"; do
     TOOL_NAME="${TOOLS[$i]}"
     SHOULD_INSTALL="${INPUT_FLAGS[$i]}"

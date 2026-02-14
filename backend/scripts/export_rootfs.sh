@@ -2,7 +2,6 @@
 set -e
 
 IMG="$1"
-echo ">>> Mounting $IMG..."
 mkdir -p /mnt/disk
 mount -o loop "$IMG" /mnt/disk
 
