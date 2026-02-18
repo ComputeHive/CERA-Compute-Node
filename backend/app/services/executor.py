@@ -1,9 +1,6 @@
 import asyncio
 from threading import Lock
-from typing import Optional, List, Callable
-import subprocess
-import os
-import sys
+from typing import Optional, List, AsyncGenerator
 
 
 class BashExecutor:
@@ -17,48 +14,50 @@ class BashExecutor:
         return cls._instance
 
     async def _stream_reader(
-        self, stream: asyncio.StreamReader, callback_func: Callable
+        self, stream: asyncio.StreamReader, queue: asyncio.Queue, is_stdout=False
     ):
-        output = []
         while True:
             line = await stream.readline()
             if not line:
                 break
             decoded_line = line.decode()
-            callback_func(decoded_line)
-            output.append(decoded_line)
-        return "".join(output)
+            if not is_stdout:
+                decoded_line = "[ERROR]: " + decoded_line
+            await queue.put(decoded_line)
+
+    async def _wait_process(
+        self, process: asyncio.subprocess.Process, queue: asyncio.Queue
+    ) -> None:
+        await process.wait()
+        await queue.put(None)
 
     async def run(
         self, cmd: List[str], cwd: Optional[str] = None
-    ) -> subprocess.CompletedProcess:
+    ) -> AsyncGenerator[str, None]:
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            cwd=cwd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        queue = asyncio.Queue()
+        stdout_task = asyncio.create_task(
+            self._stream_reader(process.stdout, queue, True)
+        )
+        stderr_task = asyncio.create_task(self._stream_reader(process.stderr, queue))
+        wait_task = asyncio.create_task(self._wait_process(process, queue))
         try:
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
-                cwd=cwd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            stdout_task = asyncio.create_task(
-                self._stream_reader(process.stdout, sys.stdout.write)
-            )
-            stderr_task = asyncio.create_task(
-                self._stream_reader(process.stderr, sys.stderr.write)
-            )
-            stdout_result, stderr_result = await asyncio.gather(
-                stdout_task, stderr_task
-            )
-            return_code = await process.wait()
-            return subprocess.CompletedProcess(
-                args=cmd,
-                returncode=return_code,
-                stdout=stdout_result,
-                stderr=stderr_result,
-            )
-        except Exception as e:
-            return subprocess.CompletedProcess(
-                args=cmd, returncode=1, stdout="", stderr=str(e)
-            )
+            while True:
+                line = await queue.get()
+                if line is None:
+                    break
+                yield line
+        except asyncio.CancelledError:
+            try:
+                process.kill()
+            except:
+                pass
+            raise
 
 
 executor = BashExecutor()

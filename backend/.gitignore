@@ -5,3 +5,5 @@ scripts/ubuntu-*
 scripts/v.sock
 scripts/vm_manager.sh
 scripts/old
+cera-backend/
+__pycache__
