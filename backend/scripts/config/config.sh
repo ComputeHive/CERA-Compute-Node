@@ -1,0 +1,26 @@
+#!/bin/bash
+ARCH="$(uname -m)"
+CERA_DATA_DIR="/var/lib/cera"
+CERA_RUN_DIR="/run/cera"
+CERA_IMG_DIR="${CERA_DATA_DIR}/images"
+CERA_DISKS_DIR="${CERA_DATA_DIR}/disks"
+ROOTFS_NAME="${CERA_IMG_DIR}/ubuntu-22.04.ext4"
+IMAGE_SIZE_MB=2048
+DISK_CAPACITY_MB=2048
+BUFFER_MB=256
+MOUNT_POINT="/mnt/cera"
+TAP_DEV="tap0"
+TAP_IP="172.16.0.1"
+VM_IP="172.16.0.2"
+VM_MAC="AA:FC:00:00:00:01"
+KERNEL_URL="https://s3.amazonaws.com/spec.ccfc.min/firecracker-ci/v1.5/x86_64/vmlinux-5.10.186"
+KERNEL_PATH="${CERA_DATA_DIR}/vmlinux"
+UDS_PATH="${CERA_RUN_DIR}/firecracker.socket"
+FC_URL="https://github.com/firecracker-microvm/firecracker/releases/download/v1.7.0/firecracker-v1.7.0-${ARCH}.tgz"
+FC_DIR="/usr/local/bin"
+DOCKER_URL="https://download.docker.com/linux/ubuntu"
+KEY_DIR="/etc/apt/keyrings"
+DOCKER_GPG_URL="${KEY_DIR}/docker.gpg"
+DOCKER_APT_REPO_DIR="/etc/apt/sources.list.d/docker.list"
+APP_USER="vm_manager"
+GUEST_CID=3
