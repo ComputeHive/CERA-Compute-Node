@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-INPUT_FLAGS=("$@") # Capture all arguments as array
+INPUT_FLAGS=("$@")
 
 TOOLS=("curl" "docker" "ip" "iptables" "mkfs.ext4" "debootstrap" "firecracker" "kvm")
 
@@ -10,8 +10,9 @@ if [ "${#INPUT_FLAGS[@]}" -lt "${#TOOLS[@]}" ]; then
     exit 1
 fi
 
-CONFIG_DIR="config"
-source $CONFIG_DIR/config.sh
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFIG_DIR="${SCRIPT_DIR}/config"
+source "$CONFIG_DIR/config.sh"
 
 install_docker() {
     sudo apt install -y ca-certificates gnupg apt-transport-https
@@ -34,32 +35,8 @@ install_firecracker_globally() {
     sudo chmod +x "$FC_DIR/firecracker"
 }
 
-create_vm_manager_user() {
-    if ! id "$APP_USER" &>/dev/null; then
-        sudo useradd -r -m -s /usr/sbin/nologin "$APP_USER"
-    fi
-    if getent group kvm >/dev/null; then
-        sudo usermod -aG kvm "$APP_USER"
-    fi
-    sudo tee /etc/sudoers.d/${APP_USER} <<EOF
-${APP_USER} ALL=NOPASSWD: /usr/local/bin/firecracker, /usr/bin/debootstrap, /sbin/iptables, /usr/bin/ip
-EOF
-
-    sudo chmod 440 /etc/sudoers.d/${APP_USER}
-    sudo visudo -cf /etc/sudoers.d/${APP_USER}
-}
-
-create_cera_directories() {
-    sudo mkdir -p "$CERA_DATA_DIR" "$CERA_IMG_DIR" "$CERA_DISKS_DIR" "$CERA_RUN_DIR" "$MOUNT_POINT"
-    sudo chown "$APP_USER":"$APP_USER" "$CERA_DATA_DIR" "$CERA_IMG_DIR"
-    # Disks dir: only root can list/access – prevents host user from reading VM data
-    sudo chown root:root "$CERA_DISKS_DIR"
-    sudo chmod 0700 "$CERA_DISKS_DIR"
-}
-
 sudo apt update
-create_vm_manager_user
-create_cera_directories
+
 for i in "${!TOOLS[@]}"; do
     TOOL_NAME="${TOOLS[$i]}"
     SHOULD_INSTALL="${INPUT_FLAGS[$i]}"

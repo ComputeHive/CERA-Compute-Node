@@ -1,18 +1,19 @@
-from fastapi import APIRouter
-from services.executor import executor
+from fastapi import APIRouter,Request
+from app.services.executor import executor
+from app.lib.utils import edit_state_file
 
 router = APIRouter()
 
 @router.get("/prog-status")
-def check_app_status():
-    # TODO: Add functions for saving state ...
+def check_app_status(request:Request):
     # Just Check Status of Installation {the frontend must route based on this}
     # TODO: update state after finishing of each stage function
     # TODO: Frontend must call this function once it opens...
-    pass
+    return {"message":request.app.state.app_state}
 @router.get("/check-deps")
 async def check_dependencies():
     res = await executor.run(["bash", "checking_prerequisites.sh"], cwd="../scripts/")
+    
     return {"status": res.returncode == 0, "stdout": res.stdout, "stderr": res.stderr}
 
 

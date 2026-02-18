@@ -1,0 +1,35 @@
+Defaults:${APP_USER} !authenticate
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/apt
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/apt-get
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/dpkg
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/gpg
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/install
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/systemctl
+
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/sbin/mkfs.ext4
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/sbin/e2fsck
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/sbin/resize2fs
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/mount
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/umount
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/sbin/debootstrap
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/sbin/chroot
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/truncate
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/dd
+
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/docker
+
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/sbin/ip
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/sbin/iptables
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/sbin/sysctl
+
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/local/bin/firecracker
+
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/mkdir
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/rmdir
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/rm
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/mv
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/cp
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/chown
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/chmod
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/pkill
+${APP_USER} ALL=(ALL) NOPASSWD: /usr/bin/tee
