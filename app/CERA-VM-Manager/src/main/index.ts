@@ -2,12 +2,71 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import fs from 'fs'
+import { spawn, ChildProcess } from 'child_process'
+
+let backendProcess: ChildProcess | null = null
+
+function getScriptPath(): string {
+  if (is.dev) {
+    return join(app.getAppPath(), 'scripts', 'main.sh')
+  }
+  return join(process.resourcesPath, 'scripts', 'main.sh')
+}
+
+function spawnBackend(): void {
+  const scriptPath = getScriptPath()
+
+  if (!fs.existsSync(scriptPath)) {
+    console.error(`Backend script not found at: ${scriptPath}`)
+    return
+  }
+
+  console.log(`Spawning backend with sudo: ${scriptPath}`)
+
+  backendProcess = spawn('pkexec', ['bash', scriptPath], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: false
+  })
+
+  backendProcess.stdout?.on('data', (data: Buffer) => {
+    console.log(`[backend]: ${data.toString().trim()}`)
+  })
+
+  backendProcess.stderr?.on('data', (data: Buffer) => {
+    console.error(`[backend:err]: ${data.toString().trim()}`)
+  })
+
+  backendProcess.on('error', (err) => {
+    console.error(`Failed to start backend process: ${err.message}`)
+    backendProcess = null
+  })
+
+  backendProcess.on('close', (code) => {
+    console.log(`Backend process exited with code ${code}`)
+    backendProcess = null
+  })
+}
+
+function killBackend(): void {
+  if (backendProcess && !backendProcess.killed) {
+    console.log('Stopping backend process...')
+    try {
+      backendProcess.kill('SIGTERM')
+    } catch {
+      if (backendProcess.pid) {
+        spawn('pkexec', ['kill', '-TERM', backendProcess.pid.toString()])
+      }
+    }
+    backendProcess = null
+  }
+}
 
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1440,
+    height: 1080,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -42,6 +101,8 @@ app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
+  // Always spawn the backend for sudo operations
+  spawnBackend()
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
@@ -65,9 +126,14 @@ app.whenReady().then(() => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
+  killBackend()
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('will-quit', () => {
+  killBackend()
 })
 
 // In this file you can include the rest of your app's specific main process
