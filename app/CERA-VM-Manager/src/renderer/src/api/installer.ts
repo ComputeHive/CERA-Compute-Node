@@ -1,24 +1,14 @@
-import { TgetInstalledTools } from '@renderer/types'
-
-type TgetAppState = {
-  app_state: string
-}
+import { TgetAppState, TgetInstalledTools } from '@renderer/types'
 export const getAppState = async (): Promise<TgetAppState> => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/prog-status`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    method: 'GET'
   })
   return (await res.json()) as TgetAppState
 }
 
 export const getInstalledTools = async (): Promise<TgetInstalledTools> => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/check-deps`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    method: 'GET'
   })
   return (await res.json()) as TgetInstalledTools
 }
