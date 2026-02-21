@@ -30,6 +30,7 @@
     "@tanstack/react-router-devtools": "^1.157.18",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "lucide-react": "^0.575.0",
     "react-hook-form": "^7.71.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18",
