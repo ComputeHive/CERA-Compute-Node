@@ -5,7 +5,8 @@ class Settings(BaseSettings):
     VERSION:str = '1.0.0'
     APP_STATE_DIR:str = "/var/lib/cera/app_state.json"
     def model_post_init(self,__context):
-        os.makedirs(os.path.dirname(self.APP_STATE_DIR),exist_ok=True)
-        with open(self.APP_STATE_DIR,'w') as file:
-            file.write("")
+        if not os.path.exists(self.APP_STATE_DIR):
+            os.makedirs(os.path.dirname(self.APP_STATE_DIR),exist_ok=True)
+            
+                
 settings = Settings()

@@ -3,7 +3,7 @@ set -euo pipefail
 
 INPUT_FLAGS=("$@")
 
-TOOLS=("curl" "docker" "ip" "iptables" "mkfs.ext4" "debootstrap" "firecracker" "kvm")
+TOOLS=("curl" "docker" "ip" "iptables" "mkfs.ext4" "debootstrap" "firecracker")
 
 if [ "${#INPUT_FLAGS[@]}" -lt "${#TOOLS[@]}" ]; then
     echo "Error: Expected ${#TOOLS[@]} binary flags, got ${#INPUT_FLAGS[@]}."
@@ -15,6 +15,7 @@ CONFIG_DIR="${SCRIPT_DIR}/config"
 source "$CONFIG_DIR/config.sh"
 
 install_docker() {
+    echo "Installing Docker Now :>"
     sudo apt install -y ca-certificates gnupg apt-transport-https
     sudo install -m 0755 -d "${KEY_DIR}"
     curl -fsSL "${DOCKER_URL}/gpg" | sudo gpg --dearmor -o ${DOCKER_GPG_URL} --yes
@@ -26,6 +27,7 @@ install_docker() {
 }
 
 install_firecracker_globally() {
+    echo "Installing Firecracker Now :>"
     local tmp_dir
     tmp_dir=$(mktemp -d)
     sudo mkdir -p "$FC_DIR"
@@ -46,18 +48,23 @@ for i in "${!TOOLS[@]}"; do
             install_docker
             ;;
         "curl")
+            echo "Installing Curl Now :>"
             sudo apt install -y curl
             ;;
         "ip")
+            echo "Installing iproute Now :>"
             sudo apt install -y iproute2
             ;;
         "iptables")
+            echo "Installing iptables Now :>"
             sudo apt install -y iptables
             ;;
         "mkfs.ext4")
+            echo "Installing mkfs.ext4 Now :>"
             sudo apt install -y e2fsprogs
             ;;
         "debootstrap")
+            echo "Installing debootstrap Now :>"
             sudo apt install -y debootstrap
             ;;
         "firecracker")

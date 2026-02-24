@@ -29,7 +29,7 @@ class BashExecutor:
         self, process: asyncio.subprocess.Process, queue: asyncio.Queue
     ) -> None:
         await process.wait()
-        await queue.put(None)
+        await queue.put(("__EXIT__", process.returncode))
 
     async def run(
         self, cmd: List[str], cwd: Optional[str] = None
@@ -48,10 +48,11 @@ class BashExecutor:
         wait_task = asyncio.create_task(self._wait_process(process, queue))
         try:
             while True:
-                line = await queue.get()
-                if line is None:
+                item = await queue.get()
+                if isinstance(item, tuple) and item[0] == "__EXIT__":
+                    yield item
                     break
-                yield line
+                yield item
         except asyncio.CancelledError:
             try:
                 process.kill()

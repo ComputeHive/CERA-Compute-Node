@@ -2,9 +2,19 @@ import Button from '@renderer/components/ui/Button'
 import Loader from '@renderer/components/ui/Loader'
 import { ToolsStatus } from './ToolsStatus'
 import { useDependenciesView } from '@renderer/hooks/useDependenciesView'
+import { TInstallTool, ToolStatusEnum } from '@renderer/types'
 
 export default function DependenciesView(): React.JSX.Element {
-  const { tools, isPending } = useDependenciesView()
+  const { tools, isPending, handleClick } = useDependenciesView()
+  const canSkipInstall = Object.entries(tools)
+    .filter((pair) => !pair[0].startsWith('d'))
+    .every((pair) => pair[1] === ToolStatusEnum.INSTALLED)
+  const noteContent: TInstallTool | '' =
+    tools.docker == ToolStatusEnum.INSTALLED
+      ? 'docker'
+      : tools.debootstrap == ToolStatusEnum.INSTALLED
+        ? 'debootstrap'
+        : ''
   return (
     <section className="relative flex flex-col items-center gap-8 min-w-3/4 min-h-3/4 bg-surface my-16 p-16">
       <article className="flex items-start justify-center gap-4  ">
@@ -15,7 +25,14 @@ export default function DependenciesView(): React.JSX.Element {
         <ToolsStatus tools={tools} />
       </article>
       <article className="absolute bottom-8 right-8">
-        <Button disabled={isPending}>Next</Button>
+        {canSkipInstall && noteContent != '' && (
+          <p>
+            {noteContent} is Installed so we can build the image using {noteContent} forward
+          </p>
+        )}
+        <Button disabled={isPending} onClick={handleClick}>
+          Next
+        </Button>
       </article>
     </section>
   )

@@ -6,3 +6,7 @@ class AppStatusEnum(str,Enum):
     BUILDING_IMG="building_img"
     READY="ready"
     RUNNING="running"
+
+class BuildToolEnum(str,Enum):
+    DOCKER="docker"
+    DEBOOTSTRAP="normal"

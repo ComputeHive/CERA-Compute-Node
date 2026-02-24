@@ -9,7 +9,7 @@ export type Tool = {
   name: string
   status: ToolStatusEnum
 }
-
+export type TInstallTool = 'docker' | 'debootstrap'
 export type TgetInstalledTools = {
   [id in (typeof TOOLS)[number]]: string
 }
