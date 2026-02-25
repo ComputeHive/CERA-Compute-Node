@@ -2,17 +2,13 @@ import { getDependenciesInstallationStream } from '@renderer/api/installer'
 
 import Loader from '../ui/Loader'
 import { LogViewer } from '../ui/LogViewer'
-import { useAppStore } from '@renderer/store'
-import { AppStatusEnum } from '@renderer/types'
+import { Dialog } from '../ui/dialog'
+import { cn } from '@renderer/lib/utils'
+import Button from '../ui/Button'
+import { useInstallView } from '@renderer/hooks/useInstallView'
 
 export function InstallView(): React.JSX.Element {
-  const { setAppStatus } = useAppStore()
-  const handleClick = (): void => {
-    setAppStatus(AppStatusEnum.BUILDING_IMG)
-    /**
-     * TODO: Handle the Dialog and Style it well...
-     */
-  }
+  const { handleClick, handleOk, open, setInstallToolState, installTool } = useInstallView()
   return (
     <section className="relative flex flex-col items-start gap-8 min-w-3/4 min-h-3/4 bg-surface my-16 p-16">
       <article className="flex items-start justify-start gap-4  ">
@@ -23,6 +19,36 @@ export function InstallView(): React.JSX.Element {
         </article>
       </article>
       <LogViewer apiFn={getDependenciesInstallationStream} handleClick={handleClick} />
+      <Dialog open={open}>
+        <h2 className="text-2xl font-medium mb-4">Choose Build Method</h2>
+        <div className="flex gap-3 m-6">
+          <button
+            className={cn(
+              'border border-active/45 p-4 bg-surface rounded-lg  ',
+              `${installTool == 'docker' && 'text-white bg-active/25'}`
+            )}
+            onClick={() => setInstallToolState('docker')}
+          >
+            docker
+          </button>
+          <button
+            className={cn(
+              'border border-active/45 p-4 bg-surface rounded-lg  ',
+              `${installTool == 'debootstrap' && 'text-white bg-active/25'}`
+            )}
+            onClick={() => setInstallToolState('debootstrap')}
+          >
+            debootstrap
+          </button>
+        </div>
+        {installTool && (
+          <div className="flex justify-end w-full">
+            <Button className="bg-green-700 text-white py-2" size="sm" onClick={handleOk}>
+              OK
+            </Button>
+          </div>
+        )}
+      </Dialog>
     </section>
   )
 }

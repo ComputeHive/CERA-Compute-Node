@@ -1,4 +1,5 @@
 import { getAppState } from '@renderer/api/installer'
+
 import { BuildImageView } from '@renderer/components/views/BuildImageView'
 import DependenciesView from '@renderer/components/views/DependenciesView'
 import { InstallView } from '@renderer/components/views/InstallView'
