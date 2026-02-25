@@ -1,4 +1,4 @@
-import { TgetAppState, TgetInstalledTools } from '@renderer/types'
+import { TgetAppState, TgetInstalledTools, TInstallTool } from '@renderer/types'
 export const getAppState = async (): Promise<TgetAppState> => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/prog-status`, {
     method: 'GET'
@@ -50,14 +50,18 @@ export const getDependenciesInstallationStream = async (
 }
 export const getBuildImageStream = async (
   onLogChunk: (args: string[]) => void,
-  signal: AbortSignal
+  signal: AbortSignal,
+  buildMethod?: TInstallTool
 ): Promise<void> => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/install-deps`, {
-    method: 'GET',
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    signal
+    signal,
+    body: JSON.stringify({
+      build_tool: buildMethod
+    })
   })
   if (!res.ok) {
     throw new Error('Network Error')

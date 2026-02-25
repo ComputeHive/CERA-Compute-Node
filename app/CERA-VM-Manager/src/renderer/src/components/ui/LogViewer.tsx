@@ -4,9 +4,10 @@ import Button from '../ui/Button'
 type LogViewProps = {
   apiFn: TApiFn
   handleClick: () => void
+  args?: never
 }
-export function LogViewer({ apiFn, handleClick }: LogViewProps): React.JSX.Element {
-  const { run, logs, isPending } = useLogViewer(apiFn)
+export function LogViewer({ apiFn, handleClick, args }: LogViewProps): React.JSX.Element {
+  const { run, logs, isPending } = useLogViewer(apiFn, args)
   const bottomRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

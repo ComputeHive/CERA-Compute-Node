@@ -72,14 +72,15 @@ async def install_dependencies():
     return StreamingResponse(stream(), media_type="text/plain")
 
 
-@router.get("/build-image")
+@router.post("/build-image")
 async def build_image(request: InstallDepsRequest):
     # TODO: Here Comes From the Frontend Building Method
     installer_stage = load_state_file()
+    install_method = "normal" if request.build_tool else "docker"
 
     async def stream():
         async for line in executor.run(
-            ["bash", "build_image.sh", f"{request.build_tool}"], cwd=SCRIPT_DIR
+            ["bash", "build_image.sh", f"{install_method}"], cwd=SCRIPT_DIR
         ):
             if isinstance(line, tuple):
                 exit_code = line[1]
