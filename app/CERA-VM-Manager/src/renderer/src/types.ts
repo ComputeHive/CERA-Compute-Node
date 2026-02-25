@@ -19,7 +19,7 @@ export type TgetAppState = {
 }
 
 export enum AppStatusEnum {
-  CHECK_DEP = 'check_dep',
+  CHECK_DEP = 'checking_dep',
   INSTALLING_DEP = 'installing_dep',
   BUILDING_IMG = 'building_img',
   READY = 'ready',

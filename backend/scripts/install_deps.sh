@@ -3,7 +3,7 @@ set -euo pipefail
 
 INPUT_FLAGS=("$@")
 
-TOOLS=("curl" "docker" "ip" "iptables" "mkfs.ext4" "debootstrap" "firecracker")
+TOOLS=("curl" "docker" "ip" "iptables" "mkfs.ext4" "debootstrap" "firecracker" "kvm")
 
 if [ "${#INPUT_FLAGS[@]}" -lt "${#TOOLS[@]}" ]; then
     echo "Error: Expected ${#TOOLS[@]} binary flags, got ${#INPUT_FLAGS[@]}."
@@ -35,6 +35,17 @@ install_firecracker_globally() {
     sudo mv "$tmp_dir/firecracker-v1.7.0-${ARCH}" "$FC_DIR/firecracker"
     rm -rf "$tmp_dir"
     sudo chmod +x "$FC_DIR/firecracker"
+}
+configure_kvm() {
+    echo "Configuring KVM permissions :>"
+    if [ -e /dev/kvm ]; then
+        sudo chown root:kvm /dev/kvm
+        sudo chmod 660 /dev/kvm
+        echo "KVM permissions configured successfully."
+    else
+        echo "[ERROR]: /dev/kvm not found. Enable virtualization in BIOS/UEFI."
+        exit 1
+    fi
 }
 
 sudo apt update
@@ -73,4 +84,3 @@ for i in "${!TOOLS[@]}"; do
         esac
     fi
 done
-echo "CERA Deps success"

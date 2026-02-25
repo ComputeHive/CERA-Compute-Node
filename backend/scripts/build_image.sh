@@ -8,7 +8,6 @@ source "$CONFIG_DIR/config.sh"
 
 mkdir -p "$CERA_IMG_DIR"
 
-
 shrink_image() {
     sudo e2fsck -fp "$ROOTFS_NAME" || {
         rc=$?
@@ -24,12 +23,12 @@ shrink_image() {
     sudo resize2fs "$ROOTFS_NAME" "$target_blocks"
 
     local final_bytes=$((target_blocks * 4096))
-    truncate -s "$final_bytes" "$ROOTFS_NAME"
+    sudo truncate -s "$final_bytes" "$ROOTFS_NAME"
 }
 
 generate_netplan() {
     sed "s/{{VM_IP}}/$VM_IP/; s/{{TAP_IP}}/$TAP_IP/" \
-        templates/01-netcfg.yaml.template > 01-netcfg.yaml
+        $SCRIPT_DIR/templates/01-netcfg.yaml.template >01-netcfg.yaml
 }
 
 configure_rootfs_chroot() {
@@ -38,7 +37,6 @@ configure_rootfs_chroot() {
     sudo chroot "$rootfs" systemctl enable serial-getty@ttyS0.service
     sudo chroot "$rootfs" systemctl enable systemd-networkd
 }
-
 
 build_image_debootstrap() {
     if ! command -v debootstrap &>/dev/null; then
@@ -72,7 +70,6 @@ build_image_debootstrap() {
     shrink_image
 }
 
-
 build_image_docker() {
     if ! command -v docker &>/dev/null; then
         echo "Error: Docker is required to build the rootfs."
@@ -83,7 +80,7 @@ build_image_docker() {
 
     sudo docker build -t fc-ubuntu-builder -f Dockerfile.fc .
 
-    dd if=/dev/zero of="$ROOTFS_NAME" bs=1M count="$IMAGE_SIZE_MB" status=progress
+    sudo dd if=/dev/zero of="$ROOTFS_NAME" bs=1M count="$IMAGE_SIZE_MB" status=progress
     sudo mkfs.ext4 -F "$ROOTFS_NAME"
 
     sudo docker run --rm --privileged \
@@ -96,7 +93,6 @@ build_image_docker() {
     rm -f 01-netcfg.yaml
     shrink_image
 }
-
 
 case "${1:-normal}" in
 docker)

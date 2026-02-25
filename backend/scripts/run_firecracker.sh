@@ -9,7 +9,6 @@ VCPU_COUNT=$1
 RAM_MEM_MB=$2
 DISK_MEM_MB=$3
 
-
 create_data_disk() {
     local size_mb=$1
     sudo mkdir -p "$CERA_DISKS_DIR"
@@ -24,9 +23,17 @@ cleanup() {
     if [ -n "${DATA_DISK_PATH:-}" ]; then
         sudo rm -f "$DATA_DISK_PATH" 2>/dev/null || true
     fi
+    if ip link show "$TAP_DEV" >/dev/null 2>&1; then
+        sudo ip link del "$TAP_DEV" 2>/dev/null || true
+    fi
+    if [ -n "${HOST_IFACE:-}" ]; then
+        sudo iptables -t nat -D POSTROUTING -o "$HOST_IFACE" -j MASQUERADE 2>/dev/null || true
+        sudo iptables -D FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || true
+        sudo iptables -D FORWARD -i "$TAP_DEV" -o "$HOST_IFACE" -j ACCEPT 2>/dev/null || true
+    fi
+    sudo rm -f "$UDS_PATH" 2>/dev/null || true
 }
 trap cleanup EXIT
-
 
 setup_network() {
     HOST_IFACE=$(ip route | grep default | awk '{print $5}' | head -n1)
@@ -44,11 +51,13 @@ setup_network() {
 
     sudo sysctl -w net.ipv4.ip_forward=1 >/dev/null
 
-    sudo iptables -t nat -A POSTROUTING -o "$HOST_IFACE" -j MASQUERADE
-    sudo iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-    sudo iptables -A FORWARD -i "$TAP_DEV" -o "$HOST_IFACE" -j ACCEPT
+    sudo iptables -t nat -C POSTROUTING -o "$HOST_IFACE" -j MASQUERADE 2>/dev/null ||
+        sudo iptables -t nat -A POSTROUTING -o "$HOST_IFACE" -j MASQUERADE
+    sudo iptables -C FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT 2>/dev/null ||
+        sudo iptables -A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+    sudo iptables -C FORWARD -i "$TAP_DEV" -o "$HOST_IFACE" -j ACCEPT 2>/dev/null ||
+        sudo iptables -A FORWARD -i "$TAP_DEV" -o "$HOST_IFACE" -j ACCEPT
 }
-
 
 run_vm() {
     if [ ! -f "$ROOTFS_NAME" ]; then
@@ -67,7 +76,7 @@ run_vm() {
     create_data_disk "$DISK_MEM_MB"
 
     if [ ! -f "$KERNEL_PATH" ]; then
-        mkdir -p "$(dirname "$KERNEL_PATH")"
+        sudo mkdir -p "$(dirname "$KERNEL_PATH")"
         curl -fsSL -o "$KERNEL_PATH" "$KERNEL_URL"
     fi
 
@@ -85,7 +94,7 @@ run_vm() {
         -e "s|{{RAM_MEM_MB}}|$RAM_MEM_MB|g" \
         -e "s|{{GUEST_CID}}|$GUEST_CID|g" \
         -e "s|{{UDS_PATH}}|$UDS_PATH|g" \
-        templates/vm_config.json.template > "$VM_CONFIG"
+        templates/vm_config.json.template >"$VM_CONFIG"
 
     sudo firecracker --no-api --config-file "$VM_CONFIG"
 }

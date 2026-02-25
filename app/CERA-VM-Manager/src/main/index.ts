@@ -4,7 +4,8 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import fs from 'fs'
 import { spawn, ChildProcess } from 'child_process'
-
+import os from 'os'
+import si from 'systeminformation'
 let backendProcess: ChildProcess | null = null
 
 function getScriptPath(): string {
@@ -112,7 +113,13 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
-
+  ipcMain.handle('system-info', async () => {
+    const cpu = os.cpus().length
+    const freeRAM = os.freemem() / 1024 ** 2
+    const fs = await si.fsSize()
+    const disk = (fs[0].size - fs[0].used) / 1024 ** 2
+    return { cpu, ram: freeRAM, disk }
+  })
   createWindow()
 
   app.on('activate', function () {

@@ -54,6 +54,9 @@ class BashExecutor:
                     break
                 yield item
         except asyncio.CancelledError:
+            stderr_task.cancel()
+            stdout_task.cancel()
+            wait_task.cancel()
             try:
                 process.kill()
             except:

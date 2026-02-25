@@ -22,5 +22,4 @@ DOCKER_URL="https://download.docker.com/linux/ubuntu"
 KEY_DIR="/etc/apt/keyrings"
 DOCKER_GPG_URL="${KEY_DIR}/docker.gpg"
 DOCKER_APT_REPO_DIR="/etc/apt/sources.list.d/docker.list"
-APP_USER="vm_manager"
 GUEST_CID=3

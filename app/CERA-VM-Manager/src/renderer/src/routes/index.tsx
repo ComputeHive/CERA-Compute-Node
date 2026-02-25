@@ -3,6 +3,8 @@ import { getAppState } from '@renderer/api/installer'
 import { BuildImageView } from '@renderer/components/views/BuildImageView'
 import DependenciesView from '@renderer/components/views/DependenciesView'
 import { InstallView } from '@renderer/components/views/InstallView'
+import { ReadyView } from '@renderer/components/views/ReadyView'
+import { RunningVMView } from '@renderer/components/views/RunningVmView'
 import { queryClient } from '@renderer/lib/utils'
 import { useAppStore } from '@renderer/store'
 import { AppStatusEnum, TgetAppState } from '@renderer/types'
@@ -66,9 +68,9 @@ function MainPage(): React.ReactElement {
     ) : appStatus == AppStatusEnum.BUILDING_IMG ? (
       <BuildImageView />
     ) : appStatus == AppStatusEnum.READY ? (
-      <></>
+      <ReadyView />
     ) : (
-      <></>
+      <RunningVMView />
     )
   return (
     <main className="bg-base w-screen h-screen flex items-center justify-center overflow-auto ">

@@ -1,10 +1,11 @@
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from app.services.executor import executor
-from app.lib.utils import AppStateModel
-from app.enums import AppStatusEnum
+from app.schemas import AppStateModel
+from app.enums import AppStatusEnum, BuildToolEnum
 from app.models.install_deps_req import InstallDepsRequest
 from app.lib.utils import edit_state_file, load_state_file
+from app.models.run_vm_req import RunVMRequest
 
 router = APIRouter()
 
@@ -17,6 +18,7 @@ required_tools = [
     "mkfs.ext4",
     "debootstrap",
     "firecracker",
+    "kvm",
 ]
 
 
@@ -34,6 +36,8 @@ async def check_dependencies():
     async for line in executor.run(
         ["bash", "checking_prerequisites.sh"], cwd=SCRIPT_DIR
     ):
+        if isinstance(line, tuple):
+            break
         output_lines.append(line.strip())
     missing_tools = " ".join(output_lines).split()
     for tool in missing_tools:
@@ -56,6 +60,7 @@ async def install_dependencies():
     print(tools_arr)
 
     async def stream():
+        exit_code = -1
         async for line in executor.run(
             ["bash", "install_deps.sh", *tools_arr], cwd=SCRIPT_DIR
         ):
@@ -74,11 +79,13 @@ async def install_dependencies():
 
 @router.post("/build-image")
 async def build_image(request: InstallDepsRequest):
-    # TODO: Here Comes From the Frontend Building Method
     installer_stage = load_state_file()
-    install_method = "normal" if request.build_tool else "docker"
+    install_method = (
+        "normal" if request.build_tool == BuildToolEnum.DEBOOTSTRAP else "docker"
+    )
 
     async def stream():
+        exit_code = -1
         async for line in executor.run(
             ["bash", "build_image.sh", f"{install_method}"], cwd=SCRIPT_DIR
         ):
@@ -96,6 +103,11 @@ async def build_image(request: InstallDepsRequest):
 
 
 @router.post("/run-vm")
-async def run_vm():
-    res = await executor.run(["bash", "run_firecracker.sh"], cwd=SCRIPT_DIR)
+async def run_vm(request: RunVMRequest):
+    cpu = str(request.CPU)
+    ram = str(request.RAM)
+    disk = str(request.Disk)
+    res = await executor.run(
+        ["bash", "run_firecracker.sh", cpu, ram, disk], cwd=SCRIPT_DIR
+    )
     return {"status": res.returncode == 0, "stdout": res.stdout, "stderr": res.stderr}

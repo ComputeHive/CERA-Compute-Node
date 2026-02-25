@@ -10,7 +10,8 @@ export const getInstalledTools = async (): Promise<TgetInstalledTools> => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/check-deps`, {
     method: 'GET'
   })
-  return (await res.json()) as TgetInstalledTools
+  const json = await res.json()
+  return json.data as TgetInstalledTools
 }
 
 export const getDependenciesInstallationStream = async (
@@ -19,9 +20,6 @@ export const getDependenciesInstallationStream = async (
 ): Promise<void> => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}/install-deps`, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    },
     signal
   })
   if (!res.ok) {
@@ -53,7 +51,7 @@ export const getBuildImageStream = async (
   signal: AbortSignal,
   buildMethod?: TInstallTool
 ): Promise<void> => {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/install-deps`, {
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/build-image`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -86,4 +84,19 @@ export const getBuildImageStream = async (
   } finally {
     reader.releaseLock()
   }
+}
+
+export const runVM = async (body: SystemInfo): Promise<unknown> => {
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/run-vm`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      CPU: body.cpu,
+      RAM: body.ram,
+      Disk: body.disk
+    })
+  })
+  return res
 }

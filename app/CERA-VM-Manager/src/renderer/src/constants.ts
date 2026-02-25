@@ -5,5 +5,6 @@ export const TOOLS = [
   'iptables',
   'mkfs.ext4',
   'debootstrap',
-  'firecracker'
+  'firecracker',
+  'kvm'
 ] as const
