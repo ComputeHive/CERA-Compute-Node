@@ -7,10 +7,13 @@ type TuseInstallView = {
   handleOk: () => void
   setInstallToolState: (arg: TInstallTool) => void
   installTool: TInstallTool | null
+  finished: boolean
+  setFinished: (arg: boolean) => void
 }
 export function useInstallView(): TuseInstallView {
   const { setAppStatus, setInstallTool } = useAppStore()
   const [open, setOpen] = useState<boolean>(false)
+  const [finished, setFinished] = useState<boolean>(false)
   const [installTool, setInstallToolState] = useState<TInstallTool | null>(null)
   const handleClick = (): void => {
     setOpen(true)
@@ -25,6 +28,8 @@ export function useInstallView(): TuseInstallView {
     open,
     handleOk,
     setInstallToolState,
-    installTool
+    installTool,
+    finished,
+    setFinished
   }
 }

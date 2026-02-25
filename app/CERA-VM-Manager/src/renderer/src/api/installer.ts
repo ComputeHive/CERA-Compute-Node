@@ -77,9 +77,9 @@ export const getBuildImageStream = async (
       if (lines.length > 0) {
         onLogChunk(lines)
       }
-      if (buffer) {
-        onLogChunk([buffer])
-      }
+    }
+    if (buffer) {
+      onLogChunk([buffer])
     }
   } finally {
     reader.releaseLock()

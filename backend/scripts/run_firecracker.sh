@@ -65,7 +65,7 @@ run_vm() {
         exit 1
     fi
 
-    sudo pkill -f "firecracker" 2>/dev/null || true
+    sudo pkill -x "firecracker" 2>/dev/null || true
     sudo rm -f "$UDS_PATH"
 
     sudo mkdir -p "$CERA_RUN_DIR"
@@ -77,7 +77,7 @@ run_vm() {
 
     if [ ! -f "$KERNEL_PATH" ]; then
         sudo mkdir -p "$(dirname "$KERNEL_PATH")"
-        curl -fsSL -o "$KERNEL_PATH" "$KERNEL_URL"
+        curl -fSL -o "$KERNEL_PATH" "$KERNEL_URL"
     fi
 
     VM_CONFIG="${CERA_RUN_DIR}/vm_config.json"
@@ -94,7 +94,7 @@ run_vm() {
         -e "s|{{RAM_MEM_MB}}|$RAM_MEM_MB|g" \
         -e "s|{{GUEST_CID}}|$GUEST_CID|g" \
         -e "s|{{UDS_PATH}}|$UDS_PATH|g" \
-        templates/vm_config.json.template >"$VM_CONFIG"
+        "$SCRIPT_DIR/templates/vm_config.json.template" >"$VM_CONFIG"
 
     sudo firecracker --no-api --config-file "$VM_CONFIG"
 }

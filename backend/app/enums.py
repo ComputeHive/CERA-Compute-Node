@@ -12,3 +12,8 @@ class AppStatusEnum(str, Enum):
 class BuildToolEnum(str, Enum):
     DOCKER = "docker"
     DEBOOTSTRAP = "debootstrap"
+
+
+class ToolStatusEnum(str, Enum):
+    NOT_INSTALLED = "Not Installled"
+    INSTALLED = "Installed"

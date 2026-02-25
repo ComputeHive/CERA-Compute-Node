@@ -6,7 +6,7 @@ import { useAppStore } from '@renderer/store'
 type TuseDependenciesView = {
   tools: TgetInstalledTools
   isPending: boolean
-  handleClick: () => void
+  handleClick: (installTool?: TInstallTool) => void
 }
 export function useDependenciesView(): TuseDependenciesView {
   const { setAppStatus, setInstallTool } = useAppStore()

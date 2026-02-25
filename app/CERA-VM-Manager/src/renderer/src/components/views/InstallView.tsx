@@ -6,19 +6,25 @@ import { Dialog } from '../ui/dialog'
 import { cn } from '@renderer/lib/utils'
 import Button from '../ui/Button'
 import { useInstallView } from '@renderer/hooks/useInstallView'
+import { Check } from 'lucide-react'
 
 export function InstallView(): React.JSX.Element {
-  const { handleClick, handleOk, open, setInstallToolState, installTool } = useInstallView()
+  const { handleClick, handleOk, open, setInstallToolState, installTool, finished, setFinished } =
+    useInstallView()
   return (
     <section className="relative flex flex-col items-start gap-8 min-w-3/4 min-h-3/4 bg-surface my-16 p-16">
       <article className="flex items-start justify-start gap-4  ">
-        <Loader />
+        {finished ? <Loader /> : <Check className="text-green-600 size-8" />}
         <article className="flex flex-col items-start justify-center gap-2">
           <h1 className="text-3xl font-bold">Installing</h1>
           <p className="text-xl text-on-seconary">Setup Dependencies for Instance on PC</p>
         </article>
       </article>
-      <LogViewer apiFn={getDependenciesInstallationStream} handleClick={handleClick} />
+      <LogViewer
+        apiFn={getDependenciesInstallationStream}
+        handleClick={handleClick}
+        setIsPending={setFinished}
+      />
       <Dialog open={open}>
         <h2 className="text-2xl font-medium mb-4">Choose Build Method</h2>
         <div className="flex gap-3 m-6">

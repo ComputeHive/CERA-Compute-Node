@@ -11,7 +11,7 @@ export type Tool = {
 }
 export type TInstallTool = 'docker' | 'debootstrap'
 export type TgetInstalledTools = {
-  [id in (typeof TOOLS)[number]]: string
+  [id in (typeof TOOLS)[number]]: Tool['status']
 }
 
 export type TgetAppState = {

@@ -5,16 +5,23 @@ type LogViewProps = {
   apiFn: TApiFn
   handleClick: () => void
   args?: never
+  setIsPending: (arg: boolean) => void
 }
-export function LogViewer({ apiFn, handleClick, args }: LogViewProps): React.JSX.Element {
+export function LogViewer({
+  apiFn,
+  handleClick,
+  args,
+  setIsPending
+}: LogViewProps): React.JSX.Element {
   const { run, logs, isPending } = useLogViewer(apiFn, args)
   const bottomRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [logs])
   useEffect(() => {
-    run()
+    run().finally(() => console.log('Stream finally done'))
   }, [])
+  useEffect(() => setIsPending(isPending), [isPending, setIsPending])
   return (
     <>
       <article className="relative bg-elevated py-8 px-4 min-w-3/4 min-h-120  max-h-120  overflow-auto w-full h-full flex flex-col gap-1">
@@ -31,7 +38,7 @@ export function LogViewer({ apiFn, handleClick, args }: LogViewProps): React.JSX
         )}
         <div ref={bottomRef} />
       </article>
-      <article className="absolute bottom-8 right-8">
+      <article className=" flex items-center justify-between">
         <Button disabled={isPending} onClick={handleClick}>
           Next
         </Button>

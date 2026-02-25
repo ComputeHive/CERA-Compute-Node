@@ -21,8 +21,6 @@ class BashExecutor:
             if not line:
                 break
             decoded_line = line.decode()
-            if not is_stdout:
-                decoded_line = "[ERROR]: " + decoded_line
             await queue.put(decoded_line)
 
     async def _wait_process(

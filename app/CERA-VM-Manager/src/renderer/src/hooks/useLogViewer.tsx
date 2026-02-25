@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
-import { UseMutateFunction, useMutation } from '@tanstack/react-query'
+import { UseMutateAsyncFunction, useMutation } from '@tanstack/react-query'
 type TuseLogViewer = {
-  run: UseMutateFunction<void, Error, void, unknown>
+  run: UseMutateAsyncFunction<void, Error, void, unknown>
   abort: () => void
   logs: string[]
   isPending: boolean
@@ -18,6 +18,7 @@ export function useLogViewer(apiFn: TApiFn, args?: never): TuseLogViewer {
   const [logs, setLogs] = useState<string[]>([])
   const logsSetter = (lines: string[]): void => setLogs((prev) => [...prev, ...lines])
   const mutationFn = async (): Promise<void> => {
+    console.log(`${mutationFn.name} is called `)
     setLogs([])
     abortControllerRef.current = new AbortController()
     try {
@@ -41,7 +42,7 @@ export function useLogViewer(apiFn: TApiFn, args?: never): TuseLogViewer {
     }
   }
   return {
-    run: mutation.mutate,
+    run: mutation.mutateAsync,
     abort,
     logs,
     isPending: mutation.isPending,
