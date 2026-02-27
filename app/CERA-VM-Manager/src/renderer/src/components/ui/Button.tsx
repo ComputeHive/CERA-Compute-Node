@@ -2,7 +2,18 @@ import { cn } from '@renderer/lib/utils'
 import { cva, VariantProps } from 'class-variance-authority'
 
 const buttonVariants = cva(
-  ['flex', 'items-center', 'justify-center', 'py-4', 'text-xl', 'border', 'rounded-xl', 'mt-2'],
+  [
+    'flex',
+    'items-center',
+    'justify-center',
+    'py-4',
+    'text-xl',
+    'border',
+    'rounded-xl',
+    'mt-2',
+    'cursor-pointer',
+    'disabled:bg-gray-400 '
+  ],
   {
     variants: {
       intent: {

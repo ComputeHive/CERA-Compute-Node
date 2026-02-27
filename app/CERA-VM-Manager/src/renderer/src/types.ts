@@ -25,3 +25,25 @@ export enum AppStatusEnum {
   READY = 'ready',
   RUNNING = 'running'
 }
+export enum JobStatusEnum {
+  RECEIVED = 'received',
+  RUNNING = 'running',
+  COMPLETED = 'completed'
+}
+export type TStartVMResponse = {
+  status: string
+}
+
+export type TvmConfig = {
+  cpu: number
+  disk: number
+  ram: number
+}
+export type TvmResourcesResponse = {}
+export type TEndVMResponse = TStartVMResponse
+export type TJob = {
+  id: string
+  price: number
+  upTime: string
+  status: JobStatusEnum
+}

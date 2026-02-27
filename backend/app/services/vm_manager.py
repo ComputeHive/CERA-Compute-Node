@@ -1,5 +1,5 @@
 import asyncio
-from app.logging import get_logger
+from app.logging_config import get_logger
 from threading import Lock
 from typing import Optional, List
 from app.constants import SCRIPT_DIR, TIMEOUT
@@ -14,7 +14,7 @@ class VMManager:
     _lock = Lock()
 
     def __new__(cls):
-        with cls.lock:
+        with cls._lock:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
             return cls._instance
@@ -26,6 +26,7 @@ class VMManager:
         self._disk: int = 0  # MB
         self._process: Optional[asyncio.subprocess.Process] = None
         self._task: Optional[asyncio.Task] = None
+        self._exit_code: Optional[int] = None
 
     @property
     def is_running(self) -> bool:
@@ -48,6 +49,17 @@ class VMManager:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
+        try:
+            exit_code = await asyncio.wait_for(self._process.wait(), timeout=2.0)
+            stderr_output = b""
+            if self._process.stderr:
+                stderr_output = await self._process.stderr.read()
+            raise RuntimeError(
+                f"VM process exited immediately (code={exit_code}): "
+                f"{stderr_output.decode(errors='replace').strip()}"
+            )
+        except asyncio.TimeoutError:
+            pass
         self._running = True
         self._task = asyncio.create_task(self._write_VM_logs())
         logger.info(f"Firecracker VM started (pid= {self._process.pid})")
@@ -81,7 +93,7 @@ class VMManager:
 
     async def stop(self) -> None:
         # Stop VSOCK bridge
-        cmd = ["sudo", "pkil", "-x", "firecracker"]
+        cmd = ["sudo", "pkill", "-x", "firecracker"]
         try:
             kill_proc = await asyncio.create_subprocess_exec(
                 *cmd,
