@@ -4,6 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_DIR="${SCRIPT_DIR}/config"
+AGENT_DIR="${SCRIPT_DIR}/../agent"
 source "$CONFIG_DIR/config.sh"
 
 sudo mkdir -p "$CERA_IMG_DIR"
@@ -70,6 +71,9 @@ build_image_debootstrap() {
     sudo cp 01-netcfg.yaml "$MOUNT_POINT/etc/netplan/01-netcfg.yaml"
 
     configure_rootfs_chroot "$MOUNT_POINT"
+
+    # Install the CERA guest agent
+    bash "$AGENT_DIR/install.sh" "$MOUNT_POINT"
 
     sudo umount "$MOUNT_POINT"
     sudo rmdir "$MOUNT_POINT"

@@ -32,11 +32,22 @@ async def check_dependencies():
     missing_tools = " ".join(output_lines).split()
     for tool in missing_tools:
         tools_status[tool] = ToolStatusEnum.NOT_INSTALLED
-    edit_state_file(
-        AppStateModel(
-            app_state=AppStatusEnum.INSTALLING_DEP, installed_tools=tools_status
+    if (
+        missing_tools == ""
+        or missing_tools == "debootstrap"
+        or missing_tools == "docker"
+    ):
+        edit_state_file(
+            AppStateModel(
+                app_state=AppStatusEnum.BUILDING_IMG, installed_tools=tools_status
+            )
         )
-    )
+    else:
+        edit_state_file(
+            AppStateModel(
+                app_state=AppStatusEnum.INSTALLING_DEP, installed_tools=tools_status
+            )
+        )
     return {"data": tools_status, "stdout": output_lines}
 
 
@@ -89,14 +100,3 @@ async def build_image(request: InstallDepsRequest):
             edit_state_file(installer_stage)
 
     return StreamingResponse(stream(), media_type="text/plain")
-
-
-@router.post("/run-vm")
-async def run_vm(request: RunVMRequest):
-    cpu = str(request.CPU)
-    ram = str(request.RAM)
-    disk = str(request.Disk)
-    res = await executor.run(
-        ["bash", "run_firecracker.sh", cpu, ram, disk], cwd=SCRIPT_DIR
-    )
-    return {"status": res.returncode == 0, "stdout": res.stdout, "stderr": res.stderr}

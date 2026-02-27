@@ -9,3 +9,4 @@ required_tools = [
     "firecracker",
     "kvm",
 ]
+TIMEOUT = 10

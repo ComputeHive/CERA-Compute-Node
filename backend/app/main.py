@@ -6,8 +6,7 @@ if __package__ is None or __package__ == "":
     sys.path.insert(0, str(project_root))
 
 from fastapi import FastAPI
-from app.services.executor import executor
-from app.api.routes import tools
+from app.api.routes import tools, vm
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 import uvicorn
@@ -18,6 +17,8 @@ app = FastAPI(
     title=settings.APP_NAME,
 )
 app.include_router(tools.router, prefix="/api")
+app.include_router(vm.router, prefix="/api/vm")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],

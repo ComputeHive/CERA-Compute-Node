@@ -18,4 +18,9 @@ RUN mkdir -p /etc/systemd/system/systemd-poweroff.service.d && printf '[Service]
 
 COPY 01-netcfg.yaml /etc/netplan/01-netcfg.yaml
 
+# Install the CERA guest agent
+COPY ../agent/cera_agent/ /opt/cera-agent/cera_agent/
+COPY ../agent/cera-agent.service /etc/systemd/system/cera-agent.service
+RUN systemctl enable cera-agent.service
+
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
