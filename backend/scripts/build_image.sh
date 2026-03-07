@@ -63,7 +63,7 @@ build_image_debootstrap() {
     sudo mount -o loop "$ROOTFS_NAME" "$MOUNT_POINT"
 
     sudo debootstrap --variant=minbase --arch amd64 \
-        --include=systemd,systemd-sysv,udev,iproute2,net-tools,curl,kmod,openssh-server,nano,passwd,netplan.io,python3,dbus,docker.io \
+        --include=systemd,systemd-sysv,udev,iproute2,net-tools,curl,kmod,openssh-server,nano,passwd,netplan.io,python3,python3-pip,dbus,docker.io \
         jammy "$MOUNT_POINT" http://archive.ubuntu.com/ubuntu/
 
     generate_netplan
@@ -81,7 +81,7 @@ build_image_debootstrap() {
     sudo chown "$(id -u):$(id -g)" "$ROOTFS_NAME" "$CERA_IMG_DIR"
 
     rm -f 01-netcfg.yaml
-    shrink_image
+    # shrink_image
 }
 
 build_image_docker() {
@@ -92,20 +92,34 @@ build_image_docker() {
 
     generate_netplan
 
-    sudo docker build -t fc-ubuntu-builder -f Dockerfile.fc .
+    sudo docker build -t fc-ubuntu-builder -f "$SCRIPT_DIR/Dockerfile.fc" "$SCRIPT_DIR/.."
 
-    sudo touch "$ROOTFS_NAME"
+    local CONTAINER_ID
+    CONTAINER_ID=$(sudo docker create fc-ubuntu-builder)
 
-    sudo docker run --rm --privileged \
-        -v "$ROOTFS_NAME":/disk.img \
-        -v "$(pwd)/export_rootfs.sh":/export_rootfs.sh \
-        -e IMAGE_SIZE_MB="$IMAGE_SIZE_MB" \
-        fc-ubuntu-builder bash /export_rootfs.sh /disk.img
+    local TAR_FILE="/tmp/fc-rootfs-$$.tar"
+    sudo docker export "$CONTAINER_ID" -o "$TAR_FILE"
+    sudo docker rm "$CONTAINER_ID" >/dev/null
+
+    sudo truncate -s "${DISK_CAPACITY_MB}M" "$ROOTFS_NAME"
+    sudo mkfs.ext4 -F "$ROOTFS_NAME" >/dev/null
+
+    sudo mkdir -p "$MOUNT_POINT"
+    sudo mount -o loop "$ROOTFS_NAME" "$MOUNT_POINT"
+
+    sudo tar xf "$TAR_FILE" -C "$MOUNT_POINT"
+    sudo rm -f "$TAR_FILE"
+
+    sudo mkdir -p "$MOUNT_POINT"/{dev,proc,run,sys,tmp,mnt,media}
+    sudo chmod 1777 "$MOUNT_POINT/tmp"
+
+    sudo umount "$MOUNT_POINT"
+    sudo rmdir "$MOUNT_POINT"
 
     sudo chown "$(id -u):$(id -g)" "$ROOTFS_NAME"
 
     rm -f 01-netcfg.yaml
-    shrink_image
+    # shrink_image
     echo "Image Build Successfully"
 }
 

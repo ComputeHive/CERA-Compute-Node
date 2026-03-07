@@ -1,5 +1,7 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 import sys
+
 
 if __package__ is None or __package__ == "":
     project_root = Path(__file__).resolve().parents[1]
@@ -8,14 +10,18 @@ if __package__ is None or __package__ == "":
 from fastapi import FastAPI
 from app.api.routes import tools, vm
 from fastapi.middleware.cors import CORSMiddleware
+from app.services.vsock_listener import vsock_listener
 from app.config import settings
 import uvicorn
 
-app = FastAPI()
 
-app = FastAPI(
-    title=settings.APP_NAME,
-)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    vsock_listener.start()
+    yield
+
+
+app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 app.include_router(tools.router, prefix="/api")
 app.include_router(vm.router, prefix="/api/vm")
 

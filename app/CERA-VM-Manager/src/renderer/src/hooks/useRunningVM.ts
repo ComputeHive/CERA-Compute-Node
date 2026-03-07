@@ -1,20 +1,21 @@
-import { stopVM } from '@renderer/api/vm'
+import { getVMMetrics, stopVM } from '@renderer/api/vm'
 import { useAppStore } from '@renderer/store'
-import { AppStatusEnum, JobStatusEnum, TJob, TvmConfig } from '@renderer/types'
-import { useMutation } from '@tanstack/react-query'
+import { AppStatusEnum, JobStatusEnum, TJob, TMetricsResponse } from '@renderer/types'
+import { useMutation, useQuery } from '@tanstack/react-query'
 
 type TuseRunningVM = {
-  resources: TvmConfig
+  resources: TMetricsResponse | undefined
   jobs: TJob[]
   isStopVMPending: boolean
   handleClick: () => Promise<void>
+  isMetricsPending: boolean
 }
 export function useRunningVM(): TuseRunningVM {
-  const resources: TvmConfig = {
-    cpu: 4,
-    ram: 12,
-    disk: 24
-  }
+  // const resources: TvmConfig = {
+  //   cpu: 4,
+  //   ram: 12,
+  //   disk: 24
+  // }
   const jobs: TJob[] = [
     {
       id: '1',
@@ -39,10 +40,16 @@ export function useRunningVM(): TuseRunningVM {
   /**
    * TODO: put the query of resources
    */
+  const getMetricsQuery = useQuery({
+    queryKey: ['metrics'],
+    queryFn: () => getVMMetrics(),
+    refetchInterval: 2000
+  })
   return {
-    resources,
+    resources: getMetricsQuery.data,
     jobs,
     isStopVMPending: stopVMMutation.isPending,
-    handleClick
+    handleClick,
+    isMetricsPending: getMetricsQuery.isLoading
   }
 }

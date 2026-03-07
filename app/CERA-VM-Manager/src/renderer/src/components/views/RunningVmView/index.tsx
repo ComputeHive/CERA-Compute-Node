@@ -1,9 +1,10 @@
 import Button from '@renderer/components/ui/Button'
+import Loader from '@renderer/components/ui/Loader'
 import { useRunningVM } from '@renderer/hooks/useRunningVM'
-import { TJob, TvmConfig } from '@renderer/types'
+import { TJob, TMetricsResponse } from '@renderer/types'
 
 export function RunningVMView(): React.JSX.Element {
-  const { resources, jobs, isStopVMPending, handleClick } = useRunningVM()
+  const { resources, jobs, isStopVMPending, handleClick, isMetricsPending } = useRunningVM()
   return (
     <section className="relative flex flex-col items-start gap-8 min-w-3/4 min-h-3/4 bg-surface my-16 p-16">
       <article className="flex flex-col items-start justify-center gap-4  ">
@@ -14,7 +15,11 @@ export function RunningVMView(): React.JSX.Element {
             <p className="text-lg text-black/75">VM Working</p>
           </div>
         </article>
-        <ResourcesList resources={resources} />
+        {isMetricsPending ? (
+          <Loader />
+        ) : (
+          <ResourcesList resources={resources as TMetricsResponse} />
+        )}
         <JobsList jobs={jobs} />
         <Button
           intent="error"
@@ -31,27 +36,27 @@ export function RunningVMView(): React.JSX.Element {
 }
 
 type ResourcesListProps = {
-  resources: TvmConfig
+  resources: TMetricsResponse
 }
-function ResourcesList({ resources: { cpu, ram, disk } }: ResourcesListProps): React.JSX.Element {
+function ResourcesList({ resources: { CPU, RAM, Disk } }: ResourcesListProps): React.JSX.Element {
   return (
     <article className="flex items-center justify-start gap-6">
-      <ResourceCard name={'CPU'} percentage={cpu} />
-      <ResourceCard name={'RAM'} percentage={ram} />
-      <ResourceCard name={'Disk'} percentage={disk} />
+      <ResourceCard name={'CPU'} percentage={`${CPU} %`} />
+      <ResourceCard name={'RAM'} percentage={`${RAM.toFixed(2)} MB`} />
+      <ResourceCard name={'Disk'} percentage={`${Disk.toFixed(2)} MB`} />
     </article>
   )
 }
 
 type ResourceCardProps = {
   name: string
-  percentage: number
+  percentage: string
 }
 function ResourceCard({ name, percentage }: ResourceCardProps): React.JSX.Element {
   return (
     <div className="w-60 h-30 bg-elevated p-4 gap-2.5">
       <h2 className="font-bold text-lg">{name} Usage</h2>
-      <p className="font-bold text-3xl text-right">{percentage} %</p>
+      <p className="font-bold text-3xl text-right">{percentage}</p>
     </div>
   )
 }

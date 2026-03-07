@@ -40,6 +40,11 @@ export type TvmConfig = {
   ram: number
 }
 export type TvmResourcesResponse = {}
+export type TMetricsResponse = {
+  CPU: number
+  RAM: number
+  Disk: number
+}
 export type TEndVMResponse = TStartVMResponse
 export type TJob = {
   id: string

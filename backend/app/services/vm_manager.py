@@ -1,4 +1,5 @@
 import asyncio
+from app.services.vsock_listener import vsock_listener
 from app.logging_config import get_logger
 from threading import Lock
 from typing import Optional, List
@@ -63,7 +64,7 @@ class VMManager:
         self._running = True
         self._task = asyncio.create_task(self._write_VM_logs())
         logger.info(f"Firecracker VM started (pid= {self._process.pid})")
-        # start VSOCK bridge
+        await vsock_listener.start()
 
     async def _write_VM_logs(self) -> None:
         assert self._process is not None
@@ -92,7 +93,7 @@ class VMManager:
             logger.info(f"Firecracker VM exited (code= {self._exit_code})")
 
     async def stop(self) -> None:
-        # Stop VSOCK bridge
+        await vsock_listener.stop()
         cmd = ["sudo", "pkill", "-x", "firecracker"]
         try:
             kill_proc = await asyncio.create_subprocess_exec(

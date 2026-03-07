@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     systemd systemd-sysv udev dbus \
     iproute2 net-tools curl \
-    openssh-server nano passwd kmod netplan.io docker.io python3
+    openssh-server nano passwd kmod netplan.io docker.io python3 python3-pip
 
 RUN echo 'root:root' | chpasswd
 RUN echo 'fc-vm' >/etc/hostname
@@ -13,14 +13,15 @@ RUN systemctl enable serial-getty@ttyS0.service
 RUN systemctl enable systemd-networkd
 RUN systemctl enable docker
 
-# Override poweroff to reboot (Firecracker has no ACPI, reboot=k makes reboot exit the VM)
 RUN mkdir -p /etc/systemd/system/systemd-poweroff.service.d && printf '[Service]\nExecStart=\nExecStart=/bin/systemctl --force reboot\n' >/etc/systemd/system/systemd-poweroff.service.d/override.conf
 
-COPY 01-netcfg.yaml /etc/netplan/01-netcfg.yaml
+COPY scripts/01-netcfg.yaml /etc/netplan/01-netcfg.yaml
 
 # Install the CERA guest agent
-COPY ../agent/cera_agent/ /opt/cera-agent/cera_agent/
-COPY ../agent/cera-agent.service /etc/systemd/system/cera-agent.service
+COPY agent/requirements.txt /opt/cera-agent/requirements.txt
+RUN pip3 install -q -r /opt/cera-agent/requirements.txt
+COPY agent/cera_agent/ /opt/cera-agent/cera_agent/
+COPY agent/cera-agent.service /etc/systemd/system/cera-agent.service
 RUN systemctl enable cera-agent.service
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*

@@ -1,0 +1,16 @@
+[Unit]
+Description=CERA Guest Agent
+After=sysinit.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -m cera_agent.main
+WorkingDirectory=/opt/cera-agent
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

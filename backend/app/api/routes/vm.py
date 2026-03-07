@@ -4,6 +4,7 @@ from app.models.run_vm_req import RunVMRequest
 from app.lib.utils import edit_state_file, load_state_file
 from app.enums import AppStatusEnum
 from app.schemas import AppStateModel
+from app.services.vsock_listener import vsock_listener
 
 router = APIRouter()
 
@@ -37,3 +38,8 @@ async def stop_vm():
         )
     )
     return {"status": "VM stopped"}
+
+
+@router.get("/metrics")
+async def get_current_metrics():
+    return vsock_listener.latest_metrics

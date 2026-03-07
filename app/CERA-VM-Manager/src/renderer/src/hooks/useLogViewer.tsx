@@ -3,7 +3,7 @@ import { UseMutateAsyncFunction, useMutation } from '@tanstack/react-query'
 type TuseLogViewer = {
   run: UseMutateAsyncFunction<void, Error, void, unknown>
   abort: () => void
-  logs: string[]
+  logs: Set<string>
   isPending: boolean
   error: Error | null
 }
@@ -15,11 +15,16 @@ export type TApiFn = (
 ) => Promise<void>
 
 export function useLogViewer(apiFn: TApiFn, args?: never): TuseLogViewer {
-  const [logs, setLogs] = useState<string[]>([])
-  const logsSetter = (lines: string[]): void => setLogs((prev) => [...prev, ...lines])
+  const [logs, setLogs] = useState<Set<string>>(new Set())
+  const logsSetter = (lines: string[]): void =>
+    setLogs((prev) => {
+      const newSet = new Set(prev)
+      lines.forEach((line) => newSet.add(line))
+      return newSet
+    })
   const mutationFn = async (): Promise<void> => {
     console.log(`${mutationFn.name} is called `)
-    setLogs([])
+    setLogs(new Set())
     abortControllerRef.current = new AbortController()
     try {
       await apiFn(logsSetter, abortControllerRef.current.signal, args)
