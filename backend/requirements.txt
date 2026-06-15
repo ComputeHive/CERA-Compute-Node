@@ -2,3 +2,10 @@ fastapi
 uvicorn
 pytest
 httpx
+aiohttp >=3.14
+cryptography >=42.0.0
+docker
+mmh3 >=5.0
+python-dotenv
+pydantic-settings
+tqdm

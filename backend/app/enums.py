@@ -7,6 +7,8 @@ class AppStatusEnum(str, Enum):
     BUILDING_IMG = "building_img"
     READY = "ready"
     RUNNING = "running"
+    SIGNUP = "signup"
+    SIGNIN = "signin"
 
 
 class BuildToolEnum(str, Enum):

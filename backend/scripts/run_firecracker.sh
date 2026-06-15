@@ -11,6 +11,8 @@ DISK_MEM_MB=$3
 
 create_data_disk() {
     local size_mb=$1
+    sudo mkdir -p "$(dirname "$CERA_DISKS_DIR")"
+    sudo chown "$(id -u):$(id -g)" "$(dirname "$CERA_DISKS_DIR")"
     sudo mkdir -p "$CERA_DISKS_DIR"
     DATA_DISK_PATH="${CERA_DISKS_DIR}/data_$(date +%s).raw"
     sudo truncate -s "${size_mb}M" "$DATA_DISK_PATH"
@@ -65,9 +67,11 @@ run_vm() {
         exit 1
     fi
 
-    sudo pkill -x "firecracker" 2>/dev/null || true
+    sudo pkill -f "firecracker.*node_${NODE_IDX}" || true
     sudo rm -f "$UDS_PATH"
 
+    sudo mkdir -p "$(dirname "$CERA_RUN_DIR")"
+    sudo chown "$(id -u):$(id -g)" "$(dirname "$CERA_RUN_DIR")"
     sudo mkdir -p "$CERA_RUN_DIR"
     sudo chown "$(id -u):$(id -g)" "$CERA_RUN_DIR"
 

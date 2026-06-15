@@ -1,15 +1,17 @@
 import json
+from enum import Enum, auto
+from typing import Any, Dict
+
 from pydantic import BaseModel
-from enum import Enum
-from typing import Dict, Any
 
 
 class MsgTypeEnum(str, Enum):
-    TASK_RECEIVED = "task_received"
-    TASK_RUNNING = "task_running"
-    TASK_FAILED = "task_failed"
-    TASK_COMPLETED = "task_completed"
-    METRICS_REPORT = "metrics_report"
+    TASK_RECEIVED = auto()
+    TASK_RUNNING = auto()
+    TASK_FAILED = auto()
+    TASK_COMPLETED = auto()
+    METRICS_REPORT = auto()
+    IDENTITY_PROVISION = auto()
 
 
 class Message(BaseModel):

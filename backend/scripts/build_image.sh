@@ -7,6 +7,8 @@ CONFIG_DIR="${SCRIPT_DIR}/config"
 AGENT_DIR="${SCRIPT_DIR}/../agent"
 source "$CONFIG_DIR/config.sh"
 
+sudo mkdir -p "$(dirname "$CERA_IMG_DIR")"
+sudo chown "$(id -u):$(id -g)" "$(dirname "$CERA_IMG_DIR")"
 sudo mkdir -p "$CERA_IMG_DIR"
 
 shrink_image() {
@@ -30,6 +32,26 @@ shrink_image() {
 generate_netplan() {
     sed "s/{{VM_IP}}/$VM_IP/; s/{{TAP_IP}}/$TAP_IP/" \
         $SCRIPT_DIR/templates/01-netcfg.yaml.template >01-netcfg.yaml
+}
+
+cleanup_mount() {
+    local mount_point=$1
+    local loop_dev=${2:-}
+
+    if mountpoint -q "$mount_point"; then
+        sudo umount "$mount_point" 2>/dev/null || true
+    fi
+    if [ -n "$loop_dev" ]; then
+        sudo losetup -d "$loop_dev" 2>/dev/null || true
+    fi
+}
+
+create_rootfs_image() {
+    sudo mkdir -p "$CERA_IMG_DIR"
+    sudo rm -f "$ROOTFS_NAME"
+    sudo truncate -s "${DISK_CAPACITY_MB}M" "$ROOTFS_NAME"
+    sudo mkfs.ext4 -F -E lazy_itable_init=0,lazy_journal_init=0 "$ROOTFS_NAME" >/dev/null
+    sudo e2fsck -fy "$ROOTFS_NAME" >/dev/null
 }
 
 configure_rootfs_chroot() {
@@ -56,8 +78,7 @@ build_image_debootstrap() {
         sudo apt-get update && sudo apt-get install -y debootstrap
     fi
 
-    sudo truncate -s "${DISK_CAPACITY_MB}M" "$ROOTFS_NAME"
-    sudo mkfs.ext4 -F "$ROOTFS_NAME" >/dev/null
+    create_rootfs_image
 
     sudo mkdir -p "$MOUNT_POINT"
     sudo mount -o loop "$ROOTFS_NAME" "$MOUNT_POINT"
@@ -90,6 +111,10 @@ build_image_docker() {
         exit 1
     fi
 
+    local LOOP_DEV=""
+    local TAR_FILE="/tmp/fc-rootfs-$$.tar"
+    trap 'cleanup_mount "$MOUNT_POINT" "$LOOP_DEV"; sudo rm -f "$TAR_FILE"; rm -f 01-netcfg.yaml' RETURN
+
     generate_netplan
 
     sudo docker build -t fc-ubuntu-builder -f "$SCRIPT_DIR/Dockerfile.fc" "$SCRIPT_DIR/.."
@@ -97,15 +122,15 @@ build_image_docker() {
     local CONTAINER_ID
     CONTAINER_ID=$(sudo docker create fc-ubuntu-builder)
 
-    local TAR_FILE="/tmp/fc-rootfs-$$.tar"
     sudo docker export "$CONTAINER_ID" -o "$TAR_FILE"
     sudo docker rm "$CONTAINER_ID" >/dev/null
 
-    sudo truncate -s "${DISK_CAPACITY_MB}M" "$ROOTFS_NAME"
-    sudo mkfs.ext4 -F "$ROOTFS_NAME" >/dev/null
+    create_rootfs_image
 
     sudo mkdir -p "$MOUNT_POINT"
-    sudo mount -o loop "$ROOTFS_NAME" "$MOUNT_POINT"
+    cleanup_mount "$MOUNT_POINT"
+    LOOP_DEV=$(sudo losetup --find --show "$ROOTFS_NAME")
+    sudo mount "$LOOP_DEV" "$MOUNT_POINT"
 
     sudo tar xf "$TAR_FILE" -C "$MOUNT_POINT"
     sudo rm -f "$TAR_FILE"
@@ -113,7 +138,9 @@ build_image_docker() {
     sudo mkdir -p "$MOUNT_POINT"/{dev,proc,run,sys,tmp,mnt,media}
     sudo chmod 1777 "$MOUNT_POINT/tmp"
 
-    sudo umount "$MOUNT_POINT"
+    sync
+    cleanup_mount "$MOUNT_POINT" "$LOOP_DEV"
+    LOOP_DEV=""
     sudo rmdir "$MOUNT_POINT"
 
     sudo chown "$(id -u):$(id -g)" "$ROOTFS_NAME"

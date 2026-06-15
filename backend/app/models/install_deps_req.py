@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from app.enums import BuildToolEnum
+from pydantic import BaseModel
+
 
 class InstallDepsRequest(BaseModel):
-    build_tool:BuildToolEnum = BuildToolEnum.DEBOOTSTRAP
+    build_tool: BuildToolEnum = BuildToolEnum.DEBOOTSTRAP

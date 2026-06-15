@@ -1,6 +1,6 @@
 import asyncio
 from threading import Lock
-from typing import Optional, List, AsyncGenerator
+from typing import AsyncGenerator, List, Optional
 
 
 class BashExecutor:
@@ -14,7 +14,10 @@ class BashExecutor:
         return cls._instance
 
     async def _stream_reader(
-        self, stream: asyncio.StreamReader, queue: asyncio.Queue, is_stdout=False
+        self,
+        stream: asyncio.StreamReader,
+        queue: asyncio.Queue,
+        is_stdout=False,
     ):
         while True:
             line = await stream.readline()
@@ -36,13 +39,15 @@ class BashExecutor:
             *cmd,
             cwd=cwd,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
         queue = asyncio.Queue()
         stdout_task = asyncio.create_task(
             self._stream_reader(process.stdout, queue, True)
         )
-        stderr_task = asyncio.create_task(self._stream_reader(process.stderr, queue))
+        stderr_task = asyncio.create_task(
+            self._stream_reader(process.stderr, queue)
+        )
         wait_task = asyncio.create_task(self._wait_process(process, queue))
         try:
             while True:
@@ -57,7 +62,7 @@ class BashExecutor:
             wait_task.cancel()
             try:
                 process.kill()
-            except:
+            except Exception:
                 pass
             raise
 

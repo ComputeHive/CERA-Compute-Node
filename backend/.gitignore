@@ -8,4 +8,5 @@ cera-backend/
 __pycache__
 scripts/old/
 scripts/test.sh
-app/logs/*
+app/logs/
+*.txt
