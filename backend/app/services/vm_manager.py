@@ -101,6 +101,7 @@ class _VMInstance:
             pass
         finally:
             self._running = False
+            await self.vsock.stop()
             logger.info(
                 f"Firecracker VM[{self._node_index}] exited"
                 f" (code= {self._exit_code})"

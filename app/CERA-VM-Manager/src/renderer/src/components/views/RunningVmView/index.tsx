@@ -1,10 +1,10 @@
 import Button from '@renderer/components/ui/Button'
 import Loader from '@renderer/components/ui/Loader'
 import { useRunningVM } from '@renderer/hooks/useRunningVM'
-import { TJob, TMetricsResponse } from '@renderer/types'
+import { Task, TMetricsResponse } from '@renderer/types'
 
 export function RunningVMView(): React.JSX.Element {
-  const { resources, jobs, isStopVMPending, handleClick, isMetricsPending } = useRunningVM()
+  const { resources, tasks, isStopVMPending, handleClick, isMetricsPending } = useRunningVM()
   return (
     <section className="relative flex flex-col items-start gap-8 min-w-3/4 min-h-3/4 bg-surface my-16 p-16">
       <article className="flex flex-col items-start justify-center gap-4  ">
@@ -20,7 +20,7 @@ export function RunningVMView(): React.JSX.Element {
         ) : (
           <ResourcesList resources={resources as TMetricsResponse} />
         )}
-        <JobsList jobs={jobs} />
+        <TasksList tasks={tasks?.tasks} />
         <Button
           intent="error"
           size="xl"
@@ -42,8 +42,8 @@ function ResourcesList({ resources: { CPU, RAM, Disk } }: ResourcesListProps): R
   return (
     <article className="flex items-center justify-start gap-6">
       <ResourceCard name={'CPU'} percentage={`${CPU} %`} />
-      <ResourceCard name={'RAM'} percentage={`${RAM.toFixed(2)} MB`} />
-      <ResourceCard name={'Disk'} percentage={`${Disk.toFixed(2)} MB`} />
+      <ResourceCard name={'Free RAM'} percentage={`${RAM} MB`} />
+      <ResourceCard name={'Disk'} percentage={`${Disk} MB`} />
     </article>
   )
 }
@@ -60,32 +60,38 @@ function ResourceCard({ name, percentage }: ResourceCardProps): React.JSX.Elemen
     </div>
   )
 }
-type JobsListProps = {
-  jobs: TJob[]
+type TasksListProps = {
+  tasks: Task[] | undefined
 }
-function JobsList({ jobs }: JobsListProps): React.JSX.Element {
+function TasksList({ tasks }: TasksListProps): React.JSX.Element {
   return (
     <div className="flex flex-col bg-elevated w-full border border-default">
-      <div className="flex items-center justify-between w-full p-2 border-b border-default ">
+      <div className="relative flex items-center justify-between w-full p-2 border-b border-default ">
         <h2 className="w-1/4 font-bold text-2xl">Job Id</h2>
         <h2 className="w-1/4 font-bold text-2xl">Job Price</h2>
         <h2 className="w-1/4 font-bold text-2xl">UP Time</h2>
         <h2 className="w-1/4 font-bold text-2xl">Job Status</h2>
       </div>
-      {jobs.map((job, idx) => (
-        <JobRow key={idx} job={job} />
-      ))}
+      {tasks && tasks.length > 0 ? (
+        tasks.map((task, idx) => <TaskRow key={idx} task={task} />)
+      ) : (
+        <>
+          <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl">
+            No Task Received by VM
+          </p>
+        </>
+      )}
     </div>
   )
 }
 type JobRowProps = {
-  job: TJob
+  task: Task
 }
-function JobRow({ job: { id, price, status, upTime } }: JobRowProps): React.JSX.Element {
+function TaskRow({ task: { id, price, status, upTime } }: JobRowProps): React.JSX.Element {
   return (
     <div className="flex items-center justify-between w-full p-2 border-b border-default">
       <p className="text-lg w-1/4">{id}</p>
-      <p className="text-lg w-1/4">{price} $/hr</p>
+      <p className="text-lg w-1/4">{price} $</p>
       <p className="text-lg w-1/4">{upTime}</p>
       <p className="text-lg w-1/4">{status}</p>
     </div>

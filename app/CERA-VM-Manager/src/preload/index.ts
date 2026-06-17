@@ -1,6 +1,5 @@
-import { contextBridge } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 
 // Custom APIs for renderer
 const api = {}
@@ -10,8 +9,15 @@ const api = {}
 // just add to the DOM global.
 if (process.contextIsolated) {
   try {
+    const apiPort =
+      process.argv.find((arg) => arg.startsWith('--api-port='))?.split('=')[1] || '8000'
+
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld('apiConfig', {
+      port: parseInt(apiPort),
+      baseUrl: `http://localhost:${apiPort}/api`
+    })
     contextBridge.exposeInMainWorld('system', {
       info: () => ipcRenderer.invoke('system-info')
     })

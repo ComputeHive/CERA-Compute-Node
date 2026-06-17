@@ -1,27 +1,35 @@
-from enum import StrEnum, auto
+from enum import Enum
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 from uuid import UUID
 
-from executor.constants import TASK_TYPES_WITH_FILES
 from executor.models.flattenedcode import FlattenedCode
 from pydantic import BaseModel, Field, HttpUrl, TypeAdapter, model_validator
 
 # TODO: Move Unrelated out of executor package
 
 
-class TaskTypeEnum(StrEnum):
-    FUNCTION_WITH_FILES = auto()
-    FUNCTION_WITH_INPUT = auto()
-    WORKFLOW = auto()
-    MAP = auto()
-    SHUFFLE_SORT = auto()
-    REDUCE = auto()
-    COMBINER = auto()
+class TaskTypeEnum(str, Enum):
+    FUNCTION_WITH_FILES = "function_with_files"
+    FUNCTION_WITH_INPUT = "function_with_input"
+    MAP = "map"
+    SHUFFLE_SORT = "shuffle_sort"
+    REDUCE = "reduce"
+    COMBINER = "combiner"
 
 
-class InputSourceTypeEnum(StrEnum):
-    DEFAULT = auto()
-    FUNCTION_OUTPUT = auto()
+TASK_TYPES_WITH_FILES = frozenset(
+    {
+        TaskTypeEnum.MAP,
+        TaskTypeEnum.REDUCE,
+        TaskTypeEnum.COMBINER,
+        TaskTypeEnum.FUNCTION_WITH_FILES,
+    }
+)
+
+
+class InputSourceTypeEnum(str, Enum):
+    DEFAULT = "default"
+    FUNCTION_OUTPUT = "function_output"
 
 
 class DecoratorParamsModel(BaseModel):
@@ -155,76 +163,6 @@ TaskState = Annotated[
     Union[FileProcessingState, ShuffleSortState, FunctionInputState],
     Field(discriminator="task_type"),
 ]
-
-
-# class ExecutionStatusEnum(StrEnum):
-#     COMPLETED = auto()
-#     FAILED = auto()
-#     TIMEOUT = auto()
-#     REJECTED = auto()
-
-
-# class NodeStateEnum(StrEnum):
-#     IDLE = auto()
-#     RUNNING = auto()
-#     PAUSED = auto()
-
-
-# class ExecutionMetrics(BaseModel):
-#     rows_processed: int = 0
-#     retries_used: int = 0
-#     wall_time_seconds: float = 0.0
-#     output_size_bytes: int = 0
-
-
-# class ExecutionResult(BaseModel):
-#     status: ExecutionStatusEnum
-#     output_path: Optional[str] = None
-#     metrics: ExecutionMetrics = Field(default_factory=ExecutionMetrics)
-#     error: Optional[str] = None
-
-
-# class TaskResult(BaseModel):
-#     task_id: str
-#     result: ExecutionResult
-#     duration_seconds: float
-
-
-# class ResourceSnapshot(BaseModel):
-#     cpu_pct: float
-#     ram_used_mb: float
-#     disk_used_mb: float
-#     net_out_kbps: float
-#     timestamp: float
-
-
-# class NodeStatus(BaseModel):
-#     state: NodeStateEnum
-#     active_task_id: Optional[str] = None
-#     resources: ResourceSnapshot
-
-
-# class TaskPackage(BaseModel):
-#     task_id: str
-#     encrypted_contract: bytes
-#     encrypted_code: Optional[bytes] = None
-
-
-# ResourceSpec = DecoratorParamsModel
-
-
-# class ExecutionContext(BaseModel):
-#     task_id: str
-#     task_type: TaskTypeEnum
-#     code_path: Optional[str] = None
-#     input_paths: List[str]
-#     output_path: str
-#     resources: ResourceSpec
-
-
-# class NodeEvent(BaseModel):
-# type: str
-#     payload: Dict[str, Any]
 
 
 TaskStateAdapter = TypeAdapter(TaskState)

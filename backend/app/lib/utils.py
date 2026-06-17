@@ -2,7 +2,7 @@ import json
 from typing import Optional
 
 from app.config import GLOBAL_STATE_PATH
-from app.schemas import GlobalStateModel, NodeConfigModel
+from app.models import GlobalStateModel, NodeConfigModel
 
 
 def load_global_state() -> GlobalStateModel:

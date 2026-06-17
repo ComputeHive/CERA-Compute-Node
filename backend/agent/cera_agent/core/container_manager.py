@@ -9,12 +9,6 @@ import requests
 from docker.errors import ImageNotFound
 from executor.models.task import ExecutorTaskPayload
 
-# import uuid
-# from executor.state_manager import StateManager
-# from pipeline.code_extractor import CodeExtractor
-# from pipeline.input_resolver import InputResolver
-# from pipeline.task_parser import TaskParser
-
 
 class ContainerManager:
     def __init__(self) -> None:

@@ -1,14 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { startVM } from '@renderer/api/vm'
 import { InstanceResources, instanceResourcesSchema } from '@renderer/schema/instance'
 import { useAppStore } from '@renderer/store'
 import { AppStatusEnum } from '@renderer/types'
 import { useMutation } from '@tanstack/react-query'
-import { useState, useEffect, BaseSyntheticEvent } from 'react'
+import { BaseSyntheticEvent } from 'react'
 import { FieldErrors, useForm, UseFormRegister, UseFormWatch } from 'react-hook-form'
 
 type TuseResourceAllocationForm = {
-  info: SystemInfo | null
+  // info: SystemInfo | null
   register: UseFormRegister<InstanceResources>
   watch: UseFormWatch<InstanceResources>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -18,14 +17,11 @@ type TuseResourceAllocationForm = {
 }
 export function useResourceAllocationForm(): TuseResourceAllocationForm {
   const resourceMutation = useMutation({
-    mutationFn: (arg: InstanceResources) => startVM(arg),
+    mutationFn: (arg: InstanceResources) => {},
     mutationKey: ['resources']
   })
-  const [info, setInfo] = useState<SystemInfo | null>(null)
   const { setAppStatus } = useAppStore()
-  useEffect(() => {
-    window.system.info().then(setInfo)
-  }, [])
+
   const {
     register,
     watch,
@@ -43,5 +39,5 @@ export function useResourceAllocationForm(): TuseResourceAllocationForm {
       console.error(err)
     }
   })
-  return { info, register, onSubmit, errors, isPending: resourceMutation.isPending, watch }
+  return { register, onSubmit, errors, isPending: resourceMutation.isPending, watch }
 }

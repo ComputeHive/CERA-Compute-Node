@@ -2,13 +2,16 @@ import asyncio
 import hashlib
 import json
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional
 
 from app.constants import TIMEOUT
 from app.lib.utils import load_node_config
 from app.logging_config import get_logger
-from app.services.protocol import Message, MsgTypeEnum
+from app.models import Message, MsgTypeEnum, TaskRecord
+
+from backend.app.enums import TaskStatusEnum
 
 logger = get_logger(__name__)
 
@@ -23,6 +26,7 @@ class VsockListener:
         self._subscribers: List[asyncio.Queue] = []
         self._latest_metrics: dict = {}
         self._task: Optional[asyncio.Task] = None
+        self._received_tasks: dict[str, TaskRecord] = {}
         node_idx = int(
             hashlib.md5(self._node_index.encode()).hexdigest()[:2], 16
         )
@@ -30,6 +34,27 @@ class VsockListener:
         os.makedirs(os.path.dirname(self._uds_path), exist_ok=True)
 
         os.makedirs(Path(self._uds_path).parent, exist_ok=True)
+
+    @property
+    def latest_tasks(self) -> list[dict]:
+        now = datetime.now(timezone.utc)
+        out = []
+        for rec in self._received_tasks.values():
+            if rec.started_at:
+                end = rec.ended_at or now
+                delta = end - rec.started_at
+                total_seconds = int(delta.total_seconds())
+                uptime = str(timedelta(seconds=total_seconds))
+            else:
+                uptime = "00:00:00"
+            task_out_dict = {
+                "id": rec.task_id,
+                "price": rec.price,
+                "upTime": uptime,
+                "status": rec.status,
+            }
+            out.append(task_out_dict)
+        return out
 
     def subscribe(self) -> asyncio.Queue:
         queue = asyncio.Queue()
@@ -64,9 +89,26 @@ class VsockListener:
     ) -> None:
         writer.write(f"CONNECT {self._guest_port}\n".encode())
         await writer.drain()
-        response = await asyncio.wait_for(reader.readline(), timeout=TIMEOUT)
-        if not response.decode().strip().startswith("OK"):
-            raise ConnectionError("Vsock handshake failed")
+        fc_response = await asyncio.wait_for(
+            reader.readline(), timeout=TIMEOUT
+        )
+        fc_status = fc_response.decode(errors="replace").strip()
+        logger.debug("Firecracker vsock response: %s", fc_status)
+        if not fc_status.startswith("OK"):
+            raise ConnectionError(
+                f"Vsock connect failed: {fc_status or 'empty response'}"
+            )
+
+        agent_response = await asyncio.wait_for(
+            reader.readline(), timeout=TIMEOUT
+        )
+        agent_status = agent_response.decode(errors="replace").strip()
+        logger.debug("Agent vsock response: %s", agent_status)
+        if agent_status != "OK":
+            raise ConnectionError(
+                f"Agent handshake failed: {agent_status or 'empty response'}"
+            )
+
         cfg = load_node_config(self._node_index)
         if cfg and cfg.token:
             provision_msg = Message(
@@ -81,7 +123,7 @@ class VsockListener:
                 (json.dumps(provision_msg.model_dump()) + "\n").encode()
             )
             await writer.drain()
-            logger.info(f"Provisioned identity for user: {cfg.username}")
+            logger.info(f"Provisioned identity for user: {cfg.node_index}")
 
         logger.info("Connected to Agent vsock stream and completed handshake")
 
@@ -95,6 +137,30 @@ class VsockListener:
                 if msg.type == MsgTypeEnum.METRICS_REPORT:
                     self._latest_metrics = msg.payload
                     logger.info(f"[METRICS] {msg.payload}")
+                elif msg.type == MsgTypeEnum.TASK_RECEIVED:
+                    tid = msg.payload["task_id"]
+                    self._received_tasks.setdefault(
+                        tid, TaskRecord(**msg.payload)
+                    )
+                elif msg.type == MsgTypeEnum.TASK_RUNNING:
+                    tid = msg.payload["task_id"]
+                    rec = self._received_tasks.setdefault(
+                        tid,
+                        TaskRecord(**msg.payload),
+                    )
+                    if rec.started_at is None:
+                        rec.started_at = datetime.now(timezone.utc)
+                elif msg.type == MsgTypeEnum.TASK_COMPLETED:
+                    tid = msg.payload["task_id"]
+                    if rec := self._received_tasks.get(tid):
+                        rec.status = TaskStatusEnum.FINISHED
+                        rec.price = msg.payload.get("price", 0.0)
+                        rec.ended_at = datetime.now(timezone.utc)
+                elif msg.type == MsgTypeEnum.TASK_FAILED:
+                    tid = msg.payload["task_id"]
+                    if rec := self._received_tasks.get(tid):
+                        rec.status = TaskStatusEnum.FAILED
+                        rec.ended_at = datetime.now(timezone.utc)
                 for queue in self._subscribers:
                     queue.put_nowait(msg)
             except Exception as e:

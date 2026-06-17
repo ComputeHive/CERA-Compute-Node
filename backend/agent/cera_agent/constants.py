@@ -1,8 +1,7 @@
 from typing import Dict
 
+from cera_agent.config import app_config
 from cera_agent.models import EndpointsEnum
-
-from backend.agent.cera_agent.config import app_config
 
 ENDPOINTS: Dict[EndpointsEnum, str] = {
     EndpointsEnum.HEARTBEAT_ENDPOINT: f"{app_config.COORDINATOR_URL}/"
@@ -13,4 +12,8 @@ ENDPOINTS: Dict[EndpointsEnum, str] = {
     "compute-nodes/register-key",
     EndpointsEnum.RECEIVE_PUBLIC_KEY_ENDPOINT: f"{app_config.COORDINATOR_URL}/"
     "compute-nodes/public-key",
+    EndpointsEnum.TASK_FINISHED_ENDPOINT: f"{app_config.COORDINATOR_URL}/"
+    "compute-tasks/finished-task",
+    EndpointsEnum.TASK_FAILED_ENDPOINT: f"{app_config.COORDINATOR_URL}/"
+    "compute-nodes/failed-task",
 }

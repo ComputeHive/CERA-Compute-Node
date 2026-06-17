@@ -23,6 +23,8 @@ export enum AppStatusEnum {
   INSTALLING_DEP = 'installing_dep',
   BUILDING_IMG = 'building_img',
   READY = 'ready',
+  SIGNUP = 'signup',
+  SIGNIN = 'signin',
   RUNNING = 'running'
 }
 export enum JobStatusEnum {
@@ -39,16 +41,27 @@ export type TvmConfig = {
   disk: number
   ram: number
 }
-export type TvmResourcesResponse = {}
 export type TMetricsResponse = {
   CPU: number
   RAM: number
   Disk: number
 }
-export type TEndVMResponse = TStartVMResponse
-export type TJob = {
+export type Task = {
   id: string
   price: number
   upTime: string
   status: JobStatusEnum
 }
+export type TTasksResponse = {
+  tasks: Task[]
+}
+export type TEndVMResponse = TStartVMResponse
+export type Tinstance = {
+  node_index: string
+  username: string
+  token: string | null
+  cpu: number
+  ram: number
+  disk: number
+}
+export type AuthMode = 'Login' | 'Sign up'

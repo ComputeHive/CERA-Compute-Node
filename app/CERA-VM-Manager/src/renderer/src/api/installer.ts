@@ -1,13 +1,13 @@
 import { TgetAppState, TgetInstalledTools, TInstallTool } from '@renderer/types'
 export const getAppState = async (): Promise<TgetAppState> => {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/prog-status`, {
+  const res = await fetch(`${window.apiConfig.baseUrl}/prog-status`, {
     method: 'GET'
   })
   return (await res.json()) as TgetAppState
 }
 
 export const getInstalledTools = async (): Promise<TgetInstalledTools> => {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/check-deps`, {
+  const res = await fetch(`${window.apiConfig.baseUrl}/check-deps`, {
     method: 'GET'
   })
   const json = await res.json()
@@ -18,7 +18,7 @@ export const getDependenciesInstallationStream = async (
   onLogChunk: (args: string[]) => void,
   signal: AbortSignal
 ): Promise<void> => {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/install-deps`, {
+  const res = await fetch(`${window.apiConfig.baseUrl}/install-deps`, {
     method: 'GET',
     signal
   })
@@ -51,7 +51,7 @@ export const getBuildImageStream = async (
   signal: AbortSignal,
   buildMethod?: TInstallTool
 ): Promise<void> => {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/build-image`, {
+  const res = await fetch(`${window.apiConfig.baseUrl}/build-image`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'

@@ -5,9 +5,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_DIR="${SCRIPT_DIR}/config"
 source "$CONFIG_DIR/config.sh"
 
-VCPU_COUNT=$1
-RAM_MEM_MB=$2
-DISK_MEM_MB=$3
+VCPU_COUNT="${1:-2}"
+RAM_MEM_MB="${2:-2048}"
+DISK_MEM_MB="${3:-3072}"
 
 create_data_disk() {
     local size_mb=$1
@@ -85,7 +85,7 @@ run_vm() {
     fi
 
     VM_CONFIG="${CERA_RUN_DIR}/vm_config.json"
-    KERNEL_BOOT_ARGS="console=ttyS0 reboot=k panic=1 pci=off root=/dev/vda rw init=/sbin/init"
+    KERNEL_BOOT_ARGS="console=ttyS0 reboot=k panic=1 pci=off root=/dev/vda rw init=/sbin/init quiet"
 
     sed \
         -e "s|{{KERNEL_PATH}}|$KERNEL_PATH|g" \

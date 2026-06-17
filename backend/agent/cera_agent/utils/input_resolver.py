@@ -1,35 +1,26 @@
+import asyncio
 import os
-import urllib.request
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from pydantic import TypeAdapter
-
+import aiohttp
 from executor.models.task import (
     InputFileMetaData,
     InputItem,
     InputSourceTypeEnum,
 )
+from pydantic import TypeAdapter
 from utils.logger import get_logger
 
 logger = get_logger(__name__)  # TODO: Check if the new Logger has any problems
 
 
-_SAFE_TYPES = {
-    "str": str,
-    "int": int,
-    "float": float,
-    "bool": bool,
-    "list": list,
-    "dict": dict,
-}
-
-
 class InputResolver:
+    def __init__(self, session: aiohttp.ClientSession, download_dir: Path):
+        self._session = session
+        self._download_dir = download_dir
 
-    DOWNLOAD_DIR: str = "/tmp/executor_inputs"
-
-    def resolve_input_files(
+    async def resolve_input_files(
         self,
         input_files: Optional[List[InputFileMetaData]],
     ) -> List[str]:
@@ -37,8 +28,7 @@ class InputResolver:
         if not input_files:
             return []
 
-        os.makedirs(self.DOWNLOAD_DIR, exist_ok=True)
-
+        self._download_dir.mkdir(parents=True, exist_ok=True)
         download_tasks: List[tuple[int, InputFileMetaData]] = []
         resolved: Dict[int, str] = {}
 
@@ -58,9 +48,13 @@ class InputResolver:
                     "'file_path'."
                 )
 
-        # Download remote files concurrently.
         if download_tasks:
-            self._download_concurrent(download_tasks, resolved)
+            download_tasks_fn = [
+                self._download_file(meta) for _, meta in download_tasks
+            ]
+            paths = await asyncio.gather(*download_tasks_fn)
+            for (idx, _), path in zip(download_tasks, paths):
+                resolved[idx] = path
 
         return [resolved[i] for i in range(len(input_files))]
 
@@ -78,12 +72,8 @@ class InputResolver:
                 InputSourceTypeEnum.DEFAULT,
                 InputSourceTypeEnum.FUNCTION_OUTPUT,
             ):
-                target_type = _SAFE_TYPES.get(item.type)
-                if not target_type:
-                    raise ValueError(
-                        f"Unsupported input type for safety: {item.type}"
-                    )
-                adapter = TypeAdapter(target_type)
+
+                adapter = TypeAdapter(item.type)
                 resolved[name] = adapter.validate_python(item.value)
                 logger.debug(
                     "Input '%s' resolved to %s (%s)",
@@ -95,29 +85,9 @@ class InputResolver:
                 raise ValueError(f"Unknown input source type: {item.source}")
         return resolved
 
-    # ------------------------------------------------------------------
-    # Internals
-    # ------------------------------------------------------------------
-
-    def _download_concurrent(
-        self,
-        tasks: List[tuple[int, InputFileMetaData]],
-        resolved: Dict[int, str],
-    ) -> None:
-        """Download multiple remote files using a thread pool."""
-        with ThreadPoolExecutor(max_workers=min(8, len(tasks))) as pool:
-            futures = {
-                pool.submit(self._download_file, meta): idx
-                for idx, meta in tasks
-            }
-            for future in as_completed(futures):
-                idx = futures[future]
-                resolved[idx] = future.result()
-
-    def _download_file(self, meta: InputFileMetaData) -> str:
-        """Download a single file and return its local absolute path."""
-        dest = os.path.join(self.DOWNLOAD_DIR, meta.file_name)
-        logger.info("Downloading %s → %s", meta.link, dest)
-        urllib.request.urlretrieve(str(meta.link), dest)
-        logger.info("Download complete: %s", dest)
-        return os.path.abspath(dest)
+    async def _download_file(self, meta: InputFileMetaData) -> str:
+        destination = self._download_dir / meta.file_name
+        async with self._session.get(str(meta.link)) as resp:
+            resp.raise_for_status()
+            destination.write_bytes(await resp.read())
+        return str(destination)

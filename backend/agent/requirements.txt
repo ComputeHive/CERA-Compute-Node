@@ -6,3 +6,4 @@ mmh3 >=5.0
 python-dotenv
 pydantic-settings
 tqdm
+supabase >=2.31

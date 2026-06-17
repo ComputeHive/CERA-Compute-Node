@@ -1,10 +1,11 @@
+import json
+
 import aiohttp
 from cera_agent.config import app_config
 from cera_agent.constants import ENDPOINTS
+from cera_agent.models import EndpointsEnum
 from core.security.ecdh import ECDHKeyGenerator
 from core.services.keystore_service import KeystoreService
-
-from backend.agent.cera_agent.models import EndpointsEnum
 
 
 async def bootstrap_key_exchange(session: aiohttp.ClientSession) -> None:
@@ -12,19 +13,29 @@ async def bootstrap_key_exchange(session: aiohttp.ClientSession) -> None:
         return None
     ECDHKeyGenerator.generate_key_pair()
     pub_pem = KeystoreService.load_key(app_config.NODE_ID, "public")
-
-    await session.post(
-        ENDPOINTS[EndpointsEnum.SEND_PUBLIC_KEY_ENDPOINT],
-        json={"node_id": app_config.NODE_ID, "public_key": pub_pem.decode()},
-        headers=app_config.HEADERS,
-    )
-    resp = await session.get(
-        ENDPOINTS[EndpointsEnum.RECEIVE_PUBLIC_KEY_ENDPOINT],
-        headers=app_config.HEADERS,
-    )
-    body = await resp.json()
-    coordinator_pub = body["public_key"]
-
-    ECDHKeyGenerator.save_party_public_key(
-        app_config.COORDINATOR_ID, coordinator_pub
-    )
+    timeout = aiohttp.ClientTimeout(total=10)
+    print("My Public Key: ", pub_pem.decode())
+    try:
+        await session.post(
+            ENDPOINTS[EndpointsEnum.SEND_PUBLIC_KEY_ENDPOINT],
+            json=json.dumps(
+                {
+                    "public_key": pub_pem.decode(),
+                }
+            ),
+            headers=app_config.HEADERS,
+            timeout=timeout,
+        )
+        resp = await session.get(
+            ENDPOINTS[EndpointsEnum.RECEIVE_PUBLIC_KEY_ENDPOINT],
+            headers=app_config.HEADERS,
+            timeout=timeout,
+        )
+        body = await resp.json()
+        ECDHKeyGenerator.save_party_public_key(
+            app_config.COORDINATOR_ID, body["public_key"].encode()
+        )
+        print("[KeyExchange] completed")
+    except Exception as exc:
+        print(f"[KeyExchange] failed: {exc}")
+        raise

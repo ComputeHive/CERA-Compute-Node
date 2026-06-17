@@ -214,8 +214,6 @@ class TaskManager:
             )
         finally:
             self._state_writer.stop(save=not succeed)
-            # if succeed: TODO: Use it for Payment and Upload Service
-            #     self._state_manager.remove()
 
         raise RuntimeError(
             f"Task {task_type.value} failed after {self._max_retries} retries"

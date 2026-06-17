@@ -96,8 +96,9 @@ build_image_debootstrap() {
     # Install the CERA guest agent
     bash "$AGENT_DIR/install.sh" "$MOUNT_POINT"
 
+
     sudo umount "$MOUNT_POINT"
-    sudo rmdir "$MOUNT_POINT"
+    sudo rmdir "$MOUNT_POINT" 2>/dev/null || true
 
     sudo chown "$(id -u):$(id -g)" "$ROOTFS_NAME" "$CERA_IMG_DIR"
 
@@ -138,10 +139,11 @@ build_image_docker() {
     sudo mkdir -p "$MOUNT_POINT"/{dev,proc,run,sys,tmp,mnt,media}
     sudo chmod 1777 "$MOUNT_POINT/tmp"
 
+
     sync
     cleanup_mount "$MOUNT_POINT" "$LOOP_DEV"
     LOOP_DEV=""
-    sudo rmdir "$MOUNT_POINT"
+    sudo rmdir "$MOUNT_POINT" 2>/dev/null || true
 
     sudo chown "$(id -u):$(id -g)" "$ROOTFS_NAME"
 

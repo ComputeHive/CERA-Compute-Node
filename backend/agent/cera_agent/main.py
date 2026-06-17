@@ -3,9 +3,8 @@ import socket
 
 import aiohttp
 from cera_agent.config import app_config
-from cera_agent.core.node_controller import NodeController
 from cera_agent.core.services.heartbeat import HeartbeatService
-from cera_agent.core.services.task_poller import TaskPollerService
+from cera_agent.core.task_service import TaskService
 from cera_agent.key_exchange import bootstrap_key_exchange
 from cera_agent.models import Message, MsgTypeEnum
 from cera_agent.utils.lib import Metrics, metrics_report
@@ -44,16 +43,16 @@ class Agent:
         await writer.drain()
         await self._read_provision(reader)
         queue = VsockQueue()
-        controller = NodeController()
         async with aiohttp.ClientSession() as session:
+            task_service = TaskService(session, queue)
             await bootstrap_key_exchange(session)
             tasks = [
                 asyncio.create_task(queue.drain_loop(writer)),
                 asyncio.create_task(MetricsSender(queue).run()),
-                asyncio.create_task(HeartbeatService(session).run()),
                 asyncio.create_task(
-                    TaskPollerService(session, queue, controller).run()
+                    HeartbeatService(session, task_service).run()
                 ),
+                asyncio.create_task(task_service.run_poller()),
             ]
             try:
                 await asyncio.gather(*tasks)

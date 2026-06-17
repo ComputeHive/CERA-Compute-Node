@@ -167,7 +167,6 @@ class ShufflerFactory:
         )
 
 
-# TODO: Add Checkpointing Logic for SortMerge
 class SortMerge:
 
     @staticmethod

@@ -31,7 +31,7 @@ const buttonVariants = cva(
       },
       size: {
         xl: ['px-8', 'gap-2'],
-        sm: ['px-6', 'gap-1']
+        sm: ['px-4', 'py-4', 'gap-1']
       }
     },
     defaultVariants: {

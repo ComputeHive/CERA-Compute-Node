@@ -1,13 +1,31 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import { electronApp, is, optimizer } from '@electron-toolkit/utils'
+import { ChildProcess, spawn } from 'child_process'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import fs from 'fs'
-import { spawn, ChildProcess } from 'child_process'
+import net from 'net'
 import os from 'os'
+import { join } from 'path'
 import si from 'systeminformation'
+import icon from '../../resources/icon.png?asset'
 let backendProcess: ChildProcess | null = null
-
+let assignedPort = 8000
+let isStoppingBackend = false
+async function findAvailablePort(startPort: number): Promise<number> {
+  const isPortAvailable = (port: number): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const server = net.createServer()
+      server.once('error', () => resolve(false))
+      server.once('listening', () => {
+        server.close()
+        resolve(true)
+      })
+      server.listen(port)
+    })
+  }
+  let port = startPort
+  while (!(await isPortAvailable(port))) port++
+  return port
+}
 function getScriptPath(): string {
   if (is.dev) {
     return join(app.getAppPath(), 'scripts', 'main.sh')
@@ -15,7 +33,8 @@ function getScriptPath(): string {
   return join(process.resourcesPath, 'scripts', 'main.sh')
 }
 
-function spawnBackend(): void {
+async function spawnBackend(): Promise<void> {
+  assignedPort = await findAvailablePort(8000)
   const scriptPath = getScriptPath()
 
   if (!fs.existsSync(scriptPath)) {
@@ -23,9 +42,10 @@ function spawnBackend(): void {
     return
   }
 
-  console.log(`Spawning backend with sudo: ${scriptPath}`)
+  console.log(`Spawning single backend process on port ${assignedPort}`)
+  isStoppingBackend = false
 
-  backendProcess = spawn('pkexec', ['bash', scriptPath], {
+  backendProcess = spawn('pkexec', ['bash', scriptPath, '--port', assignedPort.toString()], {
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: false
   })
@@ -39,7 +59,8 @@ function spawnBackend(): void {
   })
 
   backendProcess.on('error', (err) => {
-    console.error(`Failed to start backend process: ${err.message}`)
+    const action = isStoppingBackend ? 'stop' : 'start'
+    console.error(`Failed to ${action} backend process: ${err.message}`)
     backendProcess = null
   })
 
@@ -52,18 +73,23 @@ function spawnBackend(): void {
 function killBackend(): void {
   if (backendProcess && !backendProcess.killed) {
     console.log('Stopping backend process...')
+    isStoppingBackend = true
     try {
-      backendProcess.kill('SIGTERM')
-    } catch {
+      if (!backendProcess.kill('SIGTERM') && backendProcess.pid) {
+        spawn('pkexec', ['kill', '-TERM', backendProcess.pid.toString()])
+      }
+    } catch (err) {
       if (backendProcess.pid) {
         spawn('pkexec', ['kill', '-TERM', backendProcess.pid.toString()])
+      } else {
+        console.error(`Failed to stop backend process: ${(err as Error).message}`)
       }
     }
     backendProcess = null
   }
 }
 
-function createWindow(): void {
+function createWindow(port: number): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1440,
@@ -73,7 +99,8 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      additionalArguments: [`--api-port=${port}`]
     }
   })
 
@@ -102,8 +129,8 @@ app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
-  // Always spawn the backend for sudo operations
-  spawnBackend()
+  // Spawn the Single Backend process then create the first window
+  spawnBackend().then(() => createWindow(assignedPort))
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
@@ -120,12 +147,11 @@ app.whenReady().then(() => {
     const disk = (fs[0].size - fs[0].used) / 1024 ** 2
     return { cpu, ram: freeRAM, disk }
   })
-  createWindow()
-
+  ipcMain.handle('get-api-config', () => ({ port: assignedPort }))
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) createWindow(assignedPort)
   })
 })
 

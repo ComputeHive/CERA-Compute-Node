@@ -1,32 +1,21 @@
-import { getVMMetrics, stopVM } from '@renderer/api/vm'
+import { getVMMetrics, getVMTasks, stopVM } from '@renderer/api/vm'
 import { useAppStore } from '@renderer/store'
-import { AppStatusEnum, JobStatusEnum, TJob, TMetricsResponse } from '@renderer/types'
+import { AppStatusEnum, TMetricsResponse, TTasksResponse } from '@renderer/types'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
 type TuseRunningVM = {
   resources: TMetricsResponse | undefined
-  jobs: TJob[]
+  tasks: TTasksResponse | undefined
   isStopVMPending: boolean
   handleClick: () => Promise<void>
   isMetricsPending: boolean
 }
 export function useRunningVM(): TuseRunningVM {
-  // const resources: TvmConfig = {
-  //   cpu: 4,
-  //   ram: 12,
-  //   disk: 24
-  // }
-  const jobs: TJob[] = [
-    {
-      id: '1',
-      price: 14,
-      status: JobStatusEnum.RUNNING,
-      upTime: '1hr'
-    }
-  ]
+  const { node_index } = useAppStore()
+
   const stopVMMutation = useMutation({
     mutationKey: ['stop-vm'],
-    mutationFn: () => stopVM()
+    mutationFn: () => stopVM(String(node_index))
   })
   const { setAppStatus } = useAppStore()
   const handleClick = async (): Promise<void> => {
@@ -37,17 +26,19 @@ export function useRunningVM(): TuseRunningVM {
       console.log(err)
     }
   }
-  /**
-   * TODO: put the query of resources
-   */
+  const getTasksQuery = useQuery({
+    queryKey: ['tasks'],
+    queryFn: () => getVMTasks(String(node_index)),
+    refetchInterval: 2000
+  })
   const getMetricsQuery = useQuery({
     queryKey: ['metrics'],
-    queryFn: () => getVMMetrics(),
+    queryFn: () => getVMMetrics(String(node_index)),
     refetchInterval: 2000
   })
   return {
     resources: getMetricsQuery.data,
-    jobs,
+    tasks: getTasksQuery.data,
     isStopVMPending: stopVMMutation.isPending,
     handleClick,
     isMetricsPending: getMetricsQuery.isLoading

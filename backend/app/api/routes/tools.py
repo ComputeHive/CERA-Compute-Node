@@ -7,8 +7,7 @@ from app.lib.utils import (
     edit_node_config,
     load_global_state,
 )
-from app.models.install_deps_req import InstallDepsRequest
-from app.schemas import GlobalStateModel, NodeConfigModel
+from app.models import GlobalStateModel, InstallDepsRequest, NodeConfigModel
 from app.services.executor import executor
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse

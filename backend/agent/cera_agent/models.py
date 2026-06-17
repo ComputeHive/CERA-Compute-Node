@@ -1,26 +1,26 @@
 import json
-from enum import Enum, auto
+from enum import Enum
 from typing import Any, Dict, List
 
 from pydantic import BaseModel
 
 
 class MsgTypeEnum(str, Enum):
-    TASK_RECEIVED = auto()
-    TASK_RUNNING = auto()
-    TASK_FAILED = auto()
-    TASK_COMPLETED = auto()
-    METRICS_REPORT = auto()
-    IDENTITY_PROVISION = auto()
+    TASK_RECEIVED = "task_received"
+    TASK_RUNNING = "task_running"
+    TASK_FAILED = "task_failed"
+    TASK_COMPLETED = "task_completed"
+    METRICS_REPORT = "metrics_report"
+    IDENTITY_PROVISION = "identity_provision"
 
 
 class EndpointsEnum(str, Enum):
-    HEARTBEAT_ENDPOINT = auto()
-    RECEIVE_TASKS_ENDPOINT = auto()
-    SEND_PUBLIC_KEY_ENDPOINT = auto()
-    RECEIVE_PUBLIC_KEY_ENDPOINT = auto()
-    TASK_FINISHED_ENDPOINT = auto()
-    TASK_FAILED_ENDPOINT = auto()
+    HEARTBEAT_ENDPOINT = "heartbeat_endpoint"
+    RECEIVE_TASKS_ENDPOINT = "receive_tasks_endpoint"
+    SEND_PUBLIC_KEY_ENDPOINT = "send_public_key_endpoint"
+    RECEIVE_PUBLIC_KEY_ENDPOINT = "receive_public_key_endpoint"
+    TASK_FINISHED_ENDPOINT = "task_finished_endpoint"
+    TASK_FAILED_ENDPOINT = "task_failed_endpoint"
 
 
 class Message(BaseModel):
@@ -37,22 +37,22 @@ class Message(BaseModel):
 
 
 class TaskTypeEnum(str, Enum):
-    FUNCTION_WITH_FILES = auto()
-    FUNCTION_WITH_INPUT = auto()
-    WORKFLOW = auto()
-    MAP = auto()
-    SHUFFLE_SORT = auto()
-    REDUCE = auto()
-    COMBINER = auto()
+    FUNCTION_WITH_FILES = "function_with_files"
+    FUNCTION_WITH_INPUT = "function_with_input"
+    WORKFLOW = "workflow"
+    MAP = "map"
+    SHUFFLE_SORT = "shuffle_sort"
+    REDUCE = "reduce"
+    COMBINER = "combiner"
 
 
 class TaskStatusEnum(str, Enum):
-    CANCELLED = auto()
-    RECEIVED = auto()
-    PROCESSED = auto()
-    EXECUTING = auto()
-    FINISHED = auto()
-    FAILED = auto()
+    CANCELLED = "cancelled"
+    RECEIVED = "received"
+    PROCESSED = "processed"
+    EXECUTING = "executing"
+    FINISHED = "finished"
+    FAILED = "failed"
 
 
 class TaskSnapShot(BaseModel):
@@ -72,8 +72,14 @@ class AssignedTasks(BaseModel):
 
 
 class Heartbeat(BaseModel):
-    cpu_load: int
+    cpu_load: float
     cpu_cores: int
-    available_ram_mb: int
-    available_disk_mb: int
+    available_ram_mb: float
+    available_disk_mb: float
     assigned_tasks: List[TaskSnapShot]
+
+
+class ReceivedTask(BaseModel):
+    task_id: str
+    task_type: TaskTypeEnum
+    task_link: str

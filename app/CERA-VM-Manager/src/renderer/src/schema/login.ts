@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
 export const loginSchema = z.object({
-  Email: z.email(),
-  Password: z
+  username: z.string(),
+  password: z
     .string()
     .min(8, 'Password must be 8 characters long at least.')
     .refine(
@@ -16,4 +16,4 @@ export const loginSchema = z.object({
     )
 })
 
-export type LoginType = z.infer<typeof loginSchema>
+export type LoginRequest = z.infer<typeof loginSchema>

@@ -1,5 +1,4 @@
 import sys
-from contextlib import asynccontextmanager
 from pathlib import Path
 
 if __package__ is None or __package__ == "":

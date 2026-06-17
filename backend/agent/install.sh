@@ -1,3 +1,4 @@
+#!/bin/bash
 set -euo pipefail
 
 ROOTFS="${1:?Usage: install.sh <rootfs_mount_point>}"
@@ -6,17 +7,14 @@ DEST="${ROOTFS}/opt/cera-agent"
 
 echo "Installing CERA agent into ${DEST} ..."
 
-sudo mkdir -p "${DEST}/cera_agent"
+sudo mkdir -p "${DEST}"
 
-sudo cp "${AGENT_DIR}/requirements.txt" "${DEST}/"
+# Install dependencies
+sudo cp "${AGENT_DIR}/requirements.txt" "${DEST}/requirements.txt"
 sudo chroot "${ROOTFS}" pip3 install -q -r "/opt/cera-agent/requirements.txt"
 
-# Copy Python source
-sudo cp "${AGENT_DIR}/cera_agent/__init__.py" "${DEST}/cera_agent/"
-sudo cp "${AGENT_DIR}/cera_agent/main.py" "${DEST}/cera_agent/"
-sudo cp "${AGENT_DIR}/cera_agent/metrics.py" "${DEST}/cera_agent/"
-sudo cp "${AGENT_DIR}/cera_agent/protocol.py" "${DEST}/cera_agent/"
-sudo cp "${AGENT_DIR}/cera_agent/task_runner.py" "${DEST}/cera_agent/"
+# Copy the entire package recursively (mirrors Dockerfile COPY agent/cera_agent/)
+sudo cp -r "${AGENT_DIR}/cera_agent" "${DEST}/cera_agent"
 
 # Copy systemd service
 sudo cp "${AGENT_DIR}/cera-agent.service" "${ROOTFS}/etc/systemd/system/"

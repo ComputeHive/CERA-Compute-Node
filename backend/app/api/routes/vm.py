@@ -8,7 +8,7 @@ from app.lib.utils import (
     load_global_state,
     load_node_config,
 )
-from app.models.run_vm_req import RunVMRequest
+from app.models import RunVMRequest
 from app.services.vm_manager import vm_manager
 from fastapi import APIRouter, HTTPException
 
@@ -67,3 +67,11 @@ async def get_current_metrics(node_index: str):
     if not instance:
         raise HTTPException(status_code=404, detail="Node not found")
     return instance.vsock.latest_metrics
+
+
+@router.get("/nodes/{node_index}/tasks")
+async def get_node_tasks(node_index: str):
+    instance = vm_manager.get(node_index)
+    if not instance:
+        raise HTTPException(status_code=404, detail="Node not found")
+    return {"tasks": instance.vsock.latest_tasks}

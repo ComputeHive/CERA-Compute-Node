@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_API_URL: string
+  readonly VITE_Coordinator_API_URL: string
 }
 
 interface ImportMeta {
@@ -14,6 +14,11 @@ interface SystemInfo {
   disk: number
 }
 interface Window {
+  electron: any
+  apiConfig: {
+    port: number
+    baseUrl: string
+  }
   system: {
     info: () => Promise<SystemInfo>
   }
