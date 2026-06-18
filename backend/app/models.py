@@ -1,36 +1,28 @@
 import json
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
-from app.enums import (
-    AppStatusEnum,
-    BuildToolEnum,
-    MsgTypeEnum,
-    TaskStatusEnum,
-    ToolStatusEnum,
-)
 from pydantic import BaseModel
 
-
-class InstallDepsRequest(BaseModel):
-    build_tool: BuildToolEnum = BuildToolEnum.DEBOOTSTRAP
-
-
-class GlobalStateModel(BaseModel):
-    app_state: AppStatusEnum = AppStatusEnum.CHECK_DEP
-    installed_tools: Dict[str, ToolStatusEnum] = {}
+from app.enums import MsgTypeEnum, TaskStatusEnum
+from app.executor.models.task import TaskTypeEnum
 
 
-class NodeConfigModel(BaseModel):
-    node_index: str
-    username: Optional[str] = None
-    token: Optional[str] = None
-    cpu: int
-    ram: int
-    disk: int
+class Message(BaseModel):
+    type: MsgTypeEnum
+    payload: Dict[str, Any] = {}
+
+    @classmethod
+    def decode(cls, raw: bytes) -> "Message":
+        return cls(**json.loads(raw.decode(errors="replace").strip()))
+
+    def encode(self) -> bytes:
+        obj = {"type": self.type, "payload": self.payload}
+        return (json.dumps(obj, separators=(",", ":")) + "\n").encode()
 
 
-class RunVMRequest(BaseModel):
+class SigninRequest(BaseModel):
+    node_id: str
     token: str
 
 
@@ -42,10 +34,38 @@ class TaskRecord(BaseModel):
     status: TaskStatusEnum = TaskStatusEnum.RECEIVED
 
 
-class Message(BaseModel):
-    type: MsgTypeEnum
-    payload: Dict[str, Any] = {}
+class TaskReport(BaseModel):
+    id: str
+    price: float = 0.0
+    upTime: str = ""
+    status: TaskStatusEnum = TaskStatusEnum.RECEIVED
 
-    @classmethod
-    def decode(cls, raw: bytes) -> "Message":
-        return cls(**json.loads(raw.decode(errors="replace").strip()))
+
+class TaskSnapShot(BaseModel):
+    task_id: str
+    task_type: TaskTypeEnum
+    task_status: TaskStatusEnum
+
+
+class Task(BaseModel):
+    task_id: str
+    task_link: str
+    task_type: TaskTypeEnum
+
+
+class AssignedTasks(BaseModel):
+    tasks: List[Task]
+
+
+class Heartbeat(BaseModel):
+    cpu_load: float
+    cpu_cores: int
+    available_ram_mb: float
+    available_disk_mb: float
+    assigned_tasks: List[TaskSnapShot]
+
+
+class ReceivedTask(BaseModel):
+    task_id: str
+    task_type: TaskTypeEnum
+    task_link: str

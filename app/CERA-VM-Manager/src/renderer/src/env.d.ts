@@ -12,6 +12,7 @@ interface SystemInfo {
   cpu: number
   ram: number
   disk: number
+  cpuModel: string
 }
 interface Window {
   electron: any
@@ -21,5 +22,11 @@ interface Window {
   }
   system: {
     info: () => Promise<SystemInfo>
+  }
+}
+declare namespace NodeJS {
+  interface ProcessEnv {
+    npm_config_port?: string
+    ELECTRON_RENDERER_URL?: string
   }
 }

@@ -5,8 +5,8 @@ scripts/ubuntu-*
 scripts/v.sock
 scripts/vm_manager.sh
 cera-backend/
-__pycache__
+**/__pycache__/**
 scripts/old/
 scripts/test.sh
-app/logs/
+logs/**
 *.txt

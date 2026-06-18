@@ -4,7 +4,7 @@ import Input from '../ui/Input'
 import Loader from '../ui/Loader'
 
 export default function SignupForm(): React.JSX.Element {
-  const { info, errors, isPending, onSubmit, register, watch } = useSignupForm()
+  const { info, errors, isPending, onSubmit, register } = useSignupForm()
   if (!info) return <Loader />
   return (
     <form
@@ -20,7 +20,7 @@ export default function SignupForm(): React.JSX.Element {
           type="password"
           error={errors.password}
         />
-        <Input placeholder="************" {...register('cpu_model')} error={errors.cpu_model} />
+        <Input value={info.cpuModel} {...register('cpu_model')} error={errors.cpu_model} />
         <Input
           placeholder="0x***************"
           {...register('wallet_address')}
@@ -34,7 +34,8 @@ export default function SignupForm(): React.JSX.Element {
           type="range"
           min={1}
           max={Math.floor(info.cpu)}
-          value={watch('total_cpu_cores')}
+          value={Math.floor(info.cpu)}
+          disabled
         />
         <Input
           {...register('total_ram_mb', { valueAsNumber: true })}
@@ -43,7 +44,8 @@ export default function SignupForm(): React.JSX.Element {
           min={1}
           max={Math.floor(info.ram)}
           step={256}
-          value={watch('total_ram_mb')}
+          value={Math.floor(info.ram)}
+          disabled
         />
         <Input
           {...register('total_disk_mb', { valueAsNumber: true })}
@@ -52,7 +54,8 @@ export default function SignupForm(): React.JSX.Element {
           min={1}
           max={Math.floor(info.disk)}
           step={256}
-          value={watch('total_disk_mb')}
+          value={Math.floor(info.disk)}
+          disabled
         />
       </article>
       <Button type="submit" disabled={isPending}>

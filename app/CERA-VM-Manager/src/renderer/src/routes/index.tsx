@@ -1,54 +1,23 @@
-import { getAppState } from '@renderer/api/installer'
+import Loader from '@renderer/components/ui/Loader'
 import { appStatusComponents } from '@renderer/constants'
-import { queryClient } from '@renderer/lib/utils'
 import { useAppStore } from '@renderer/store'
-import { AppStatusEnum, TgetAppState } from '@renderer/types'
-import {
-  dataTagErrorSymbol,
-  dataTagSymbol,
-  OmitKeyof,
-  QueryFunction,
-  queryOptions,
-  UseQueryOptions,
-  useSuspenseQuery
-} from '@tanstack/react-query'
+import { AppStatusEnum } from '@renderer/types'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
-const statusQueryOptions = (): OmitKeyof<
-  UseQueryOptions<TgetAppState, Error, TgetAppState, string[]>,
-  'queryFn'
-> & {
-  queryFn?: QueryFunction<TgetAppState, string[], never> | undefined
-} & {
-  queryKey: string[] & {
-    [dataTagSymbol]: TgetAppState
-    [dataTagErrorSymbol]: Error
-  }
-} =>
-  queryOptions({
-    queryKey: ['app_status'],
-    queryFn: () => getAppState(),
-    retry: 20,
-    retryDelay: 500
-  })
-
 export const Route = createFileRoute('/')({
-  component: MainPage,
-  loader: async () => {
-    queryClient.prefetchQuery(statusQueryOptions())
-    await queryClient.ensureQueryData(statusQueryOptions())
-  }
+  component: MainPage
 })
 
 function MainPage(): React.ReactElement {
-  const { data } = useSuspenseQuery(statusQueryOptions())
   const { appStatus, setAppStatus } = useAppStore()
   const [displayedStatus, setDisplayedStatus] = useState<typeof appStatus>(appStatus)
   const [visible, setVisible] = useState<boolean>(true)
+  useEffect(() => {
+    const token = localStorage.getItem('token')
 
-  useEffect(() => setAppStatus(data.status as AppStatusEnum), [data.status, setAppStatus])
-
+    setAppStatus(token ? AppStatusEnum.RUNNING : AppStatusEnum.SIGNIN)
+  }, [setAppStatus])
   useEffect(() => {
     if (appStatus === displayedStatus) return
     setVisible(false)
@@ -58,8 +27,8 @@ function MainPage(): React.ReactElement {
     }, 300)
     return () => clearTimeout(timer)
   }, [appStatus, displayedStatus])
-
-  const maincomponent = appStatusComponents[appStatus || 'DEFAULT']
+  if (!appStatus) return <Loader />
+  const maincomponent = appStatusComponents[appStatus]
 
   return (
     <main className="bg-base w-screen h-screen flex items-center justify-center overflow-auto ">

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { signinCoordinator } from '@renderer/api/auth'
-import { startVM } from '@renderer/api/vm'
+import { startServer } from '@renderer/api/vm'
 import { LoginRequest, loginSchema } from '@renderer/schema/login'
 import { useAppStore } from '@renderer/store'
 import { AppStatusEnum } from '@renderer/types'
@@ -16,7 +16,7 @@ type TuseSigninView = {
   errors: FieldErrors<LoginRequest>
 }
 export function useSigninView(): TuseSigninView {
-  const { node_index, setAppStatus } = useAppStore()
+  const { setAppStatus } = useAppStore()
   const {
     register,
     handleSubmit,
@@ -29,16 +29,15 @@ export function useSigninView(): TuseSigninView {
     mutationFn: (arg: LoginRequest) => signinCoordinator(arg),
     mutationKey: ['coord-signin']
   })
-  const RunVMMutation = useMutation({
-    mutationFn: (arg: { token: string }) => startVM(String(node_index), arg),
-    mutationKey: ['signup']
+  const startServerMutation = useMutation({
+    mutationFn: (arg: { token: string; node_id: string }) => startServer(arg),
+    mutationKey: ['signin']
   })
-  console.log(`Node Index: ${node_index}`)
   const onSubmit = handleSubmit(async (arg: LoginRequest) => {
     try {
       const res = await signinCoordinatorMutation.mutateAsync(arg)
       console.log(res)
-      const res2 = await RunVMMutation.mutateAsync({ token: res.token })
+      const res2 = await startServerMutation.mutateAsync({ token: res.token, node_id: res.node_id })
       console.log(res2)
       setAppStatus(AppStatusEnum.RUNNING)
     } catch (err) {
@@ -49,6 +48,6 @@ export function useSigninView(): TuseSigninView {
     register,
     onSubmit,
     errors,
-    isPending: RunVMMutation.isPending
+    isPending: startServerMutation.isPending
   }
 }

@@ -20,11 +20,13 @@ export const signupCoordinator = async (data: RegisterRequest): Promise<{ node_i
   return (await res.json()) as { node_id: string }
 }
 
-export const signinCoordinator = async (data: LoginRequest): Promise<{ token: string }> => {
+export const signinCoordinator = async (
+  data: LoginRequest
+): Promise<{ token: string; node_id: string }> => {
   const res = await fetch(`${import.meta.env.VITE_Coordinator_API_URL}/compute-nodes/signin`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   })
-  return (await res.json()) as { token: string }
+  return (await res.json()) as { token: string; node_id: string }
 }

@@ -1,34 +1,13 @@
 from enum import Enum
 
 
-class AppStatusEnum(str, Enum):
-    CHECK_DEP = "checking_dep"
-    INSTALLING_DEP = "installing_dep"
-    BUILDING_IMG = "building_img"
-    READY = "ready"
-    RUNNING = "running"
-    SIGNUP = "signup"
-    SIGNIN = "signin"
-
-
-class BuildToolEnum(str, Enum):
-    DOCKER = "docker"
-    DEBOOTSTRAP = "debootstrap"
-
-
-class ToolStatusEnum(str, Enum):
-    NOT_INSTALLED = "Not Installled"
-    INSTALLED = "Installed"
-
-
-class TaskTypeEnum(str, Enum):
-    FUNCTION_WITH_FILES = "function_with_files"
-    FUNCTION_WITH_INPUT = "function_with_input"
-    WORKFLOW = "workflow"
-    MAP = "map"
-    SHUFFLE_SORT = "shuffle_sort"
-    REDUCE = "reduce"
-    COMBINER = "combiner"
+class MsgTypeEnum(str, Enum):
+    TASK_RECEIVED = "task_received"
+    TASK_RUNNING = "task_running"
+    TASK_FAILED = "task_failed"
+    TASK_COMPLETED = "task_completed"
+    METRICS_REPORT = "metrics_report"
+    IDENTITY_PROVISION = "identity_provision"
 
 
 class TaskStatusEnum(str, Enum):
@@ -40,10 +19,10 @@ class TaskStatusEnum(str, Enum):
     FAILED = "failed"
 
 
-class MsgTypeEnum(str, Enum):
-    TASK_RECEIVED = "task_received"
-    TASK_RUNNING = "task_running"
-    TASK_FAILED = "task_failed"
-    TASK_COMPLETED = "task_completed"
-    METRICS_REPORT = "metrics_report"
-    IDENTITY_PROVISION = "identity_provision"
+class EndpointsEnum(str, Enum):
+    HEARTBEAT_ENDPOINT = "heartbeat_endpoint"
+    RECEIVE_TASKS_ENDPOINT = "receive_tasks_endpoint"
+    SEND_PUBLIC_KEY_ENDPOINT = "send_public_key_endpoint"
+    RECEIVE_PUBLIC_KEY_ENDPOINT = "receive_public_key_endpoint"
+    TASK_FINISHED_ENDPOINT = "task_finished_endpoint"
+    TASK_FAILED_ENDPOINT = "task_failed_endpoint"

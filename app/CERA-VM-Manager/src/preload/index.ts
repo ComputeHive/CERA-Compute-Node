@@ -9,13 +9,15 @@ const api = {}
 // just add to the DOM global.
 if (process.contextIsolated) {
   try {
-    const apiPort =
-      process.argv.find((arg) => arg.startsWith('--api-port='))?.split('=')[1] || '8000'
+    const apiPort = parseInt(
+      process.argv.find((arg) => arg.startsWith('--api-port='))?.split('=')[1] ?? '4700',
+      10
+    )
 
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
     contextBridge.exposeInMainWorld('apiConfig', {
-      port: parseInt(apiPort),
+      port: apiPort,
       baseUrl: `http://localhost:${apiPort}/api`
     })
     contextBridge.exposeInMainWorld('system', {
