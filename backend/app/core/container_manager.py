@@ -112,6 +112,46 @@ class ContainerManager:
             logger.error("Task %s failed after maximum retries", payload.id)
         return succeeded
 
+    @staticmethod
+    def _to_container_path(p: str) -> str:
+        """Translate a host path to its POSIX form inside the Linux container.
+
+        On Windows the host paths look like ``F:\\tmp\\Cera_downloads\\<id>``;
+        a Linux container cannot use a drive-qualified, backslash path, so we
+        drop the drive and normalise separators -> ``/tmp/Cera_downloads/<id>``.
+        """
+        if not p:
+            return p
+        _, rest = os.path.splitdrive(p)
+        return rest.replace("\\", "/")
+
+    def _build_container_payload(
+        self, payload: ExecutorTaskPayload
+    ) -> tuple[ExecutorTaskPayload, dict]:
+        """Return a payload + volumes dict with container-side POSIX paths.
+
+        The volume *source* keys stay as the original host paths (Docker
+        Desktop accepts Windows paths there); only the container bind targets
+        and the path fields the executor reads are POSIX-translated.
+        """
+        run_volumes = {
+            host: {**spec, "bind": self._to_container_path(spec["bind"])}
+            for host, spec in payload.config.volumes.items()
+        }
+        container_payload = payload.model_copy(deep=True)
+        container_payload.config.volumes = run_volumes
+        container_payload.config.state_path = self._to_container_path(
+            payload.config.state_path
+        )
+        if payload.output_path:
+            container_payload.output_path = self._to_container_path(
+                payload.output_path
+            )
+        container_payload.input_files = [
+            self._to_container_path(f) for f in payload.input_files
+        ]
+        return container_payload, run_volumes
+
     def _run_container(
         self,
         deps: str,
@@ -119,13 +159,25 @@ class ContainerManager:
     ) -> int:
         if not self._ensure_image():
             self.build_image(deps)
-        payload_json = payload.model_dump_json()
+
+        # os.getuid/getgid are Unix-only. On Windows hosts (Docker Desktop
+        # running Linux containers) the host paths are not valid container
+        # paths, so translate them; on Unix the host IS the container fs.
+        is_unix = hasattr(os, "getuid")
+        if is_unix:
+            container_payload, run_volumes = payload, payload.config.volumes
+        else:
+            container_payload, run_volumes = self._build_container_payload(
+                payload
+            )
+
+        payload_json = container_payload.model_dump_json()
         logger.info(
             "Starting container for task %s (image: %s)",
             payload.id,
             self.image_tag,
         )
-        container = self.client.containers.run(
+        run_kwargs = dict(
             image=self.image_tag,
             command=[
                 "python",
@@ -139,10 +191,12 @@ class ContainerManager:
             remove=True,
             mem_limit=f"{payload.config.resources.ram_mb}m",
             cpu_shares=payload.config.resources.cpu_cores * 1_024,
-            volumes=payload.config.volumes,
-            user=f"{os.getuid()}:{os.getgid()}",
+            volumes=run_volumes,
             network_mode="none",
         )
+        if is_unix:
+            run_kwargs["user"] = f"{os.getuid()}:{os.getgid()}"
+        container = self.client.containers.run(**run_kwargs)
 
         def stream_logs():
             try:

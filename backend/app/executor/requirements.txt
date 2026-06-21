@@ -1,0 +1,3 @@
+pydantic>=2.0
+tqdm
+mmh3>=5.0
