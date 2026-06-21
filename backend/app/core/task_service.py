@@ -93,11 +93,22 @@ class TaskService:
                 self._handle_task(task.task_id, task.task_link)
             )
 
-    async def _notify_success(self, task_id: str, output_links: list) -> bool:
+    async def _notify_success(
+        self,
+        task_id: str,
+        output_links: list,
+        started_at: datetime,
+        ended_at: datetime,
+    ) -> bool:
         try:
             await self._session.post(
                 ENDPOINTS[EndpointsEnum.TASK_FINISHED_ENDPOINT],
-                json={"task_id": task_id, "output_links": output_links},
+                json={
+                    "task_id": task_id,
+                    "output_links": output_links,
+                    "started_at": started_at.isoformat(),
+                    "ended_at": ended_at.isoformat(),
+                },
                 headers=app_config.HEADERS,
             )
             logger.debug("Notification sent for task %s", task_id)
@@ -151,18 +162,20 @@ class TaskService:
                 else None
             )
 
-            success = await asyncio.to_thread(
-                self._run, task, code_path, input_files, inputs, parent_dir
+            started_at = datetime.now(timezone.utc)
+            success, ended_at = await asyncio.to_thread(
+                self._run_timed, task, code_path, input_files, inputs, parent_dir
             )
             if success:
-                # TODO: Add the payment step to the coordinator
                 output_links = await asyncio.to_thread(
                     self._package_and_upload_output, task_id, task.type
                 )
                 logger.info(
                     "Task %s finished, output_links: %s", task_id, output_links
                 )
-                notified = await self._notify_success(task_id, output_links)
+                notified = await self._notify_success(
+                    task_id, output_links, started_at, ended_at
+                )
                 if not notified:
                     await self._notify_failure(task_id)
 
@@ -179,6 +192,18 @@ class TaskService:
             )
         finally:
             self._active.pop(task_id, None)
+
+    def _run_timed(
+        self,
+        task,
+        code_path: str,
+        input_files,
+        inputs,
+        parent_dir: Path,
+    ) -> tuple[bool, datetime]:
+        """Thin wrapper around _run that also returns the wall-clock end time."""
+        success = self._run(task, code_path, input_files, inputs, parent_dir)
+        return success, datetime.now(timezone.utc)
 
     def _decrypt_and_extract(
         self, task_id: str, encrypted_zip: bytes, parent_dir: Path

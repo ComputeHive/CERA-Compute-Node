@@ -1,6 +1,4 @@
-import os
-import time
-from typing import Optional, Tuple
+import psutil
 
 from app.enums import MsgTypeEnum
 from app.models import Message
@@ -8,60 +6,26 @@ from app.models import Message
 
 class Metrics:
 
-    _prev_cpu: Optional[Tuple[float, float]] = None
-
-    @staticmethod
-    def _read_cpu_times() -> Tuple[float, float]:
-        with open("/proc/stat") as f:
-            line = f.readline()
-        parts = line.split()
-        times = [float(x) for x in parts[1:]]
-        idle = times[3]
-        total = sum(times)
-        return idle, total
-
     @staticmethod
     def _cpu_percent() -> float:
-        idle, total = Metrics._read_cpu_times()
-        if Metrics._prev_cpu is None:
-            Metrics._prev_cpu = (idle, total)
-            time.sleep(0.1)
-            idle, total = Metrics._read_cpu_times()
-
-        prev_idle, prev_total = Metrics._prev_cpu
-        Metrics._prev_cpu = (idle, total)
-        d_total = total - prev_total
-        d_idle = idle - prev_idle
-        if d_total == 0:
-            return 0.0
-        return round((1.0 - d_idle / d_total) * 100, 2)
+        return round(psutil.cpu_percent(interval=0.1), 2)
 
     @staticmethod
     def _disk_usage() -> float:
-        st = os.statvfs("/")
-        free = st.f_bfree * st.f_bsize
-        return round(free * (1 / pow(1024, 2)), 2)
+        free_bytes = psutil.disk_usage("/").free
+        return round(free_bytes / (1024 ** 2), 2)
 
     @staticmethod
     def _memory_usage() -> float:
-        with open("/proc/meminfo") as f:
-            for line in f:
-                parts = line.split()
-                key = parts[0].rstrip(":")
-                val_kb = float(parts[1])
-                if key == "MemFree":
-                    return val_kb / 1024
-            return 0.0
+        free_bytes = psutil.virtual_memory().available
+        return round(free_bytes / (1024 ** 2), 2)
 
     @staticmethod
     def collect_metrics() -> dict:
-        RAM = Metrics._memory_usage()
-        Disk = Metrics._disk_usage()
-        CPU = Metrics._cpu_percent()
         return {
-            "CPU": CPU,
-            "RAM": RAM,
-            "Disk": Disk,
+            "CPU": Metrics._cpu_percent(),
+            "RAM": Metrics._memory_usage(),
+            "Disk": Metrics._disk_usage(),
         }
 
 

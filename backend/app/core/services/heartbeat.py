@@ -40,7 +40,7 @@ class HeartbeatService:
             logger.info("Sending Heartbeat to Coordinator")
             resp = await self._session.post(
                 ENDPOINTS[EndpointsEnum.HEARTBEAT_ENDPOINT],
-                json=payload.model_dump_json(),
+                json=payload.model_dump(),
                 headers=app_config.HEADERS,
             )
             resp.raise_for_status()
