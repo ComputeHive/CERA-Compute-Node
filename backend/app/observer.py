@@ -28,8 +28,8 @@ class MessageObserver:
         if rec.started_at:
             end = rec.ended_at or now
             delta = end - rec.started_at
-            total_seconds = int(delta.total_seconds())
-            uptime = str(timedelta(seconds=total_seconds))
+            total_seconds = delta.total_seconds()
+            uptime = str(timedelta(seconds=total_seconds))[:-3]
         else:
             uptime = "00:00:00"
         self._tasks[rec.task_id] = TaskReport(

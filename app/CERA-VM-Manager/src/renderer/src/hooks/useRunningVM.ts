@@ -11,7 +11,7 @@ export function useRunningVM(): TuseRunningVM {
   const getTasksQuery = useQuery({
     queryKey: ['tasks'],
     queryFn: () => getTasks(),
-    refetchInterval: 2000
+    refetchInterval: 1000
   })
   const getMetricsQuery = useQuery({
     queryKey: ['metrics'],

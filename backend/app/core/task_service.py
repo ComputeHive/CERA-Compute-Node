@@ -64,7 +64,7 @@ class TaskService:
     async def _poll_once(self) -> None:
         resp = await self._session.get(
             ENDPOINTS[EndpointsEnum.RECEIVE_TASKS_ENDPOINT],
-            params={"tasks_number": 1},
+            params={"tasks_number": 3},
             headers=app_config.HEADERS,
         )
         resp.raise_for_status()
@@ -266,7 +266,7 @@ class TaskService:
                 task_record = TaskRecord(
                     task_id=str(payload.id),
                     price=calculate_price(
-                        int(delta.total_seconds()),
+                        float(delta.total_seconds()),
                         payload.config.resources.cpu_cores,
                         payload.config.resources.disk_mb,
                         payload.config.resources.ram_mb,
@@ -286,7 +286,7 @@ class TaskService:
         task_record = TaskRecord(
             task_id=str(payload.id),
             price=calculate_price(
-                int(delta.total_seconds()),
+                float(delta.total_seconds()),
                 payload.config.resources.cpu_cores,
                 payload.config.resources.disk_mb,
                 payload.config.resources.ram_mb,

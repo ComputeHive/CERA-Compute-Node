@@ -99,5 +99,5 @@ def calculate_price(
     delta_time_in_sec, cpu_cores: float, disk_mb: float, ram_mb: float
 ):
     return (
-        cpu_cores * 0.4 + ram_mb * 0.25 + disk_mb * 0.1
+        cpu_cores * 0.4 + ram_mb * 0.025 + disk_mb * 0.001
     ) * delta_time_in_sec

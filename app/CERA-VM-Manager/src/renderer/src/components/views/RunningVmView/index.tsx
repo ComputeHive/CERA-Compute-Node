@@ -1,7 +1,7 @@
 import Loader from '@renderer/components/ui/Loader'
 import { useRunningVM } from '@renderer/hooks/useRunningVM'
+import { humanizeTimedelta } from '@renderer/lib/utils'
 import { Task, TMetricsResponse } from '@renderer/types'
-
 export function RunningVMView(): React.JSX.Element {
   const { resources, tasks, isMetricsPending } = useRunningVM()
   console.log(resources)
@@ -77,8 +77,8 @@ function TaskRow({ task: { id, price, status, upTime } }: JobRowProps): React.JS
   return (
     <div className="flex items-center justify-between w-full p-2 border-b border-default">
       <p className="text-lg w-1/4">{id}</p>
-      <p className="text-lg w-1/4">{price} $</p>
-      <p className="text-lg w-1/4">{upTime}</p>
+      <p className="text-lg w-1/4">{price.toFixed(3)} $</p>
+      <p className="text-lg w-1/4">{humanizeTimedelta(upTime)}</p>
       <p className="text-lg w-1/4">{status}</p>
     </div>
   )

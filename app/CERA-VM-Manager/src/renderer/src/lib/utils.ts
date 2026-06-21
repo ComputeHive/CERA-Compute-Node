@@ -23,3 +23,16 @@ export function loadFromLocalStorage(key: string): string | null {
     return null
   }
 }
+export function humanizeTimedelta(s: string): string {
+  const match = s.match(/^(\d+):(\d+):(\d+)(?:\.(\d+))?$/)
+
+  if (!match) return s
+
+  const [, h, m, sec, ms = '0'] = match
+  let result = ''
+  if (h != '0') result += `${h}h `
+  if (m != '00') result += `${m}m `
+  if (sec != '00') result += `${sec}s `
+  result += `${ms}ms`
+  return result
+}
