@@ -12,6 +12,10 @@ from app.executor.models.task import (
     InputItem,
     InputSourceTypeEnum,
 )
+from app.executor.utils.logging_config import get_logger
+from app.utils.supabase_storage import SupabaseBlobStorage, supabase_storage
+
+logger = get_logger(__name__)
 
 
 class InputResolver:
@@ -54,7 +58,7 @@ class InputResolver:
             paths = await asyncio.gather(*download_tasks_fn)
             for (idx, _), path in zip(download_tasks, paths):
                 resolved[idx] = path
-
+            logger.info("All input files downloaded and resolved")
         return [resolved[i] for i in range(len(input_files))]
 
     def resolve_inputs(
@@ -81,9 +85,24 @@ class InputResolver:
 
     async def _download_file(self, meta: InputFileMetaData) -> str:
         destination = self._download_dir / meta.file_name
-        async with self._session.get(str(meta.link)) as resp:
-            resp.raise_for_status()
-            destination.write_bytes(await resp.read())
+        logger.info(
+            "Downloading input file %s from %s", meta.file_name, meta.link
+        )
+        try:
+            bucket_name, object_name = (
+                SupabaseBlobStorage._parse_bucket_and_object(str(meta.link))
+            )
+            file_bytes = await asyncio.to_thread(
+                supabase_storage.download, bucket_name, object_name
+            )
+            destination.write_bytes(file_bytes)
+        except Exception:
+            try:
+                async with self._session.get(str(meta.link)) as resp:
+                    resp.raise_for_status()
+                    destination.write_bytes(await resp.read())
+            except Exception as e:
+                print(f"Resolving input file failed: {e}")
         if zipfile.is_zipfile(destination):
             with zipfile.ZipFile(destination) as zf:
                 extracted_name = zf.namelist()[0]
@@ -91,7 +110,11 @@ class InputResolver:
             destination.unlink()
             meta.file_name = extracted_name
             meta.file_path = str(self._download_dir / extracted_name)
+            logger.debug(
+                "input file %s Extracted to %s", meta.file_name, meta.file_path
+            )
         else:
+            logger.debug("Downloaded file stored at '%s'", destination)
             meta.file_path = str(destination)
 
         return meta.file_path

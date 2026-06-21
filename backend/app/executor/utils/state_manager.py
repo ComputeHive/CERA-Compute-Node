@@ -56,7 +56,6 @@ class StateManager:
                 print(e)
 
 
-# TODO: Refactor when necessary
 class StateWriter:
 
     def __init__(

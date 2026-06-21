@@ -4,18 +4,23 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from app.executor.models.flattenedcode import FlattenedCode
+from app.executor.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class CodeExtractor:
 
     def extract_from_file(self, file_path: str) -> FlattenedCode:
         content = Path(file_path).read_text(encoding="utf-8")
+        logger.info("Extracting code from file: %s", file_path)
         requirements = self._extract_requirements(content)
         code_content = self._extract_code_block(content)
         function_name = self._extract_target_name(code_content)
         function_cont, code_deps = self._split_target(
             code_content, function_name
         )
+        logger.debug("Target function name: %s", function_name)
         input_schema = self._extract_input_schema(function_cont)
         return FlattenedCode(
             requirements=requirements,

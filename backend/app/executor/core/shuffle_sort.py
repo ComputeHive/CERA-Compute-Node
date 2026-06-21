@@ -101,8 +101,9 @@ class PartitionBalancingShuffler(BaseShuffler):
 
     def _load_keys(self) -> Optional[Dict[str, Dict[int, int]]]:
         result = None
-        with open(self._keys_file_path, 'r') as f:
-            result = json.loads(f.read())
+        if Path(self._keys_file_path).exists():
+            with open(self._keys_file_path, 'r') as f:
+                result = json.loads(f.read())
         return result
 
     def _distribute_keys(self):

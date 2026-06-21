@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -16,6 +17,7 @@ from app.executor.models.task import (
     ExecutorTaskPayload,
     TaskModel,
 )
+from app.executor.utils.logging_config import get_logger
 from app.executor.utils.state_manager import StateManager
 from app.models import (
     ReceivedTask,
@@ -27,8 +29,11 @@ from app.models import (
 from app.observer import MessageObserver
 from app.utils.code_extractor import CodeExtractor
 from app.utils.input_resolver import InputResolver
+from app.utils.lib import calculate_price
 from app.utils.supabase_storage import FINISHED_NODES_BUCKET, supabase_storage
 from app.utils.task_parser import TaskParser
+
+logger = get_logger(__name__)
 
 
 class TaskService:
@@ -54,12 +59,12 @@ class TaskService:
             try:
                 await self._poll_once()
             except aiohttp.ClientError as exc:
-                print(f"[Poller] GET failed: {exc}")
+                logger.error("Task polling failed: %s", exc)
 
     async def _poll_once(self) -> None:
         resp = await self._session.get(
             ENDPOINTS[EndpointsEnum.RECEIVE_TASKS_ENDPOINT],
-            params={"tasks_number": 3},
+            params={"tasks_number": 1},
             headers=app_config.HEADERS,
         )
         resp.raise_for_status()
@@ -73,7 +78,7 @@ class TaskService:
             )
             for t in tasks["tasks"]
         ]
-        print(f"Received Tasks: {received_tasks}")
+        logger.info("Received %d Tasks", len(received_tasks))
         for task in received_tasks:
 
             if task.task_id in self._active:
@@ -83,101 +88,95 @@ class TaskService:
                 task_id=task.task_id, price=0.0, status=TaskStatusEnum.RECEIVED
             )
             self._observer.update_task(task_record)
+            logger.info("Task %s accepted", task.task_id)
             asyncio.create_task(
-                self._handle_task(  # TODO: Handle Payment
-                    task.task_id, task.task_link, 0.0
-                )
+                self._handle_task(task.task_id, task.task_link)
             )
 
-    async def _handle_task(
-        self, task_id: str, presigned_url: str, price: float
-    ) -> None:
+    async def _notify_success(self, task_id: str, output_links: list) -> bool:
+        try:
+            await self._session.post(
+                ENDPOINTS[EndpointsEnum.TASK_FINISHED_ENDPOINT],
+                json={"task_id": task_id, "output_links": output_links},
+                headers=app_config.HEADERS,
+            )
+            logger.debug("Notification sent for task %s", task_id)
+            return True
+        except aiohttp.ClientError as exc:
+            logger.error(
+                "Failed to send finished task %s to coordinator: %s",
+                task_id,
+                exc,
+            )
+            return False
+
+    async def _notify_failure(self, task_id: str) -> None:
+        try:
+            logger.debug("Notifying failure for task %s", task_id)
+            await self._session.post(
+                ENDPOINTS[EndpointsEnum.TASK_FAILED_ENDPOINT],
+                json={"task_id": task_id},
+                headers=app_config.HEADERS,
+            )
+        except aiohttp.ClientError as exc:
+            logger.error(
+                "Failed to notify task %s failure to coordinator: %s",
+                task_id,
+                exc,
+            )
+
+    async def _handle_task(self, task_id: str, presigned_url: str) -> None:
         parent_dir = Path(app_config.task_volume_path(task_id))
         parent_dir.mkdir(parents=True, exist_ok=True)
+        logger.info("Start Downloading task %s files", task_id)
         try:
             async with self._session.get(presigned_url) as resp:
                 resp.raise_for_status()
                 encrypted_zip = await resp.read()
+
             task_path, code_path = await asyncio.to_thread(
                 self._decrypt_and_extract, task_id, encrypted_zip, parent_dir
             )
             task = await asyncio.to_thread(TaskParser.parse_file, task_path)
+
             resolver = InputResolver(self._session, parent_dir)
             input_files = await resolver.resolve_input_files(
                 None
                 if task.type == TaskTypeEnum.FUNCTION_WITH_INPUT
                 else task.input_files
             )
-            print(input_files)
             inputs = resolver.resolve_inputs(
                 task.inputs
                 if task.type == TaskTypeEnum.FUNCTION_WITH_INPUT
                 else None
             )
-            task_record = TaskRecord(
-                task_id=task_id,
-                price=0.0,
-                status=TaskStatusEnum.EXECUTING,
-            )
-            self._observer.update_task(task_record)
+
             success = await asyncio.to_thread(
                 self._run, task, code_path, input_files, inputs, parent_dir
             )
-            print(success)
             if success:
-                task_record = TaskRecord(
-                    task_id=task_id,
-                    price=0.0,
-                    status=TaskStatusEnum.FINISHED,
-                )
-                # TODO: Add the payment Step to  the coordinator
-                self._observer.update_task(task_record)
-                print("Hi I'm here")
+                # TODO: Add the payment step to the coordinator
                 output_links = await asyncio.to_thread(
                     self._package_and_upload_output, task_id, task.type
                 )
-                try:
-                    resp = await self._session.post(
-                        ENDPOINTS[EndpointsEnum.TASK_FINISHED_ENDPOINT],
-                        json={
-                            "task_id": task_id,
-                            "output_links": output_links,
-                        },
-                        headers=app_config.HEADERS,
-                    )
-                except aiohttp.ClientError as exc:
-                    print(
-                        "[Poller] failed to send finished task to coordinator:"
-                        f" {exc}"
-                    )
-            else:
-                task_record = TaskRecord(
-                    task_id=task_id,
-                    price=0.0,
-                    status=TaskStatusEnum.FAILED,
+                logger.info(
+                    "Task %s finished, output_links: %s", task_id, output_links
                 )
-                self._observer.update_task(task_record)
-                try:
-                    resp = await self._session.post(
-                        ENDPOINTS[EndpointsEnum.TASK_FAILED_ENDPOINT],
-                        json={
-                            "task_id": task_id,
-                        },
-                        headers=app_config.HEADERS,
-                    )
-                except aiohttp.ClientError as exc:
-                    print(
-                        "[Poller] failed to send finished task to coordinator:"
-                        f" {exc}"
-                    )
+                notified = await self._notify_success(task_id, output_links)
+                if not notified:
+                    await self._notify_failure(task_id)
+
         except Exception as exc:
-            print(f"[Poller] task {task_id} raised: {exc}")
-            task_record = TaskRecord(
-                task_id=task_id,
-                price=0.0,
-                status=TaskStatusEnum.FAILED,
+
+            logger.exception(
+                "Unhandled error handling task %s: %s", task_id, exc
             )
-            self._observer.update_task(task_record)
+            await self._notify_failure(task_id)
+            self._observer.update_task(
+                TaskRecord(
+                    task_id=task_id, price=0.0, status=TaskStatusEnum.FAILED
+                )
+            )
         finally:
             self._active.pop(task_id, None)
 
@@ -209,10 +208,11 @@ class TaskService:
         parent_dir: Path,
     ) -> bool:
         try:
+
             flattened_code = None
+
             if task.type != TaskTypeEnum.SHUFFLE_SORT:
                 flattened_code = CodeExtractor().extract_from_file(code_path)
-            print(flattened_code)
             task_deps = (
                 ""
                 if task.type == TaskTypeEnum.SHUFFLE_SORT
@@ -245,16 +245,57 @@ class TaskService:
                 config=cfg,
                 output_path=app_config.output_path(task.type, str(task.id)),
             )
+
             docker_controller = ContainerManager()
             current_attempt = state.retry if state else 0
+            start_time = datetime.now(timezone.utc)
+            task_record = TaskRecord(
+                task_id=str(payload.id),
+                price=0.0,
+                status=TaskStatusEnum.EXECUTING,
+                started_at=start_time,
+            )
+            self._observer.update_task(task_record)
             succeeded = docker_controller.execute(
                 current_attempt, task_deps, payload
             )
+
             if succeeded:
+                end_time = datetime.now(timezone.utc)
+                delta = end_time - start_time
+                task_record = TaskRecord(
+                    task_id=str(payload.id),
+                    price=calculate_price(
+                        int(delta.total_seconds()),
+                        payload.config.resources.cpu_cores,
+                        payload.config.resources.disk_mb,
+                        payload.config.resources.ram_mb,
+                    ),
+                    status=TaskStatusEnum.FINISHED,
+                    started_at=start_time,
+                    ended_at=end_time,
+                )
+                self._observer.update_task(task_record)
                 print("Execution Succeeded")
                 return succeeded
         except Exception:
             pass
+        end_time = datetime.now(timezone.utc)
+        delta = end_time - start_time
+
+        task_record = TaskRecord(
+            task_id=str(payload.id),
+            price=calculate_price(
+                int(delta.total_seconds()),
+                payload.config.resources.cpu_cores,
+                payload.config.resources.disk_mb,
+                payload.config.resources.ram_mb,
+            ),
+            status=TaskStatusEnum.FAILED,
+            started_at=start_time,
+            ended_at=end_time,
+        )
+        self._observer.update_task(task_record)
         return False
 
     def _package_and_upload_output(

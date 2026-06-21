@@ -9,6 +9,9 @@ import requests
 from docker.errors import ImageNotFound
 
 from app.executor.models.task import ExecutorTaskPayload
+from app.executor.utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class ContainerManager:
@@ -24,6 +27,7 @@ class ContainerManager:
             f.write(deps)
 
     def _calculate_hash_image(self):
+
         h = sha256()
         for path in sorted(self.executor_dir.rglob("*")):
             if (
@@ -44,11 +48,13 @@ class ContainerManager:
         self.image_tag = f"executor:{self._calculate_hash_image()}"
         try:
             self.client.images.get(self.image_tag)
+            logger.debug("Image %s already exists", self.image_tag)
             return True
         except ImageNotFound:
             return False
 
     def build_image(self, deps: str) -> None:
+        logger.info("Building executor image: %s", self.image_tag)
         self._write_task_requirements(deps)
         stream = self.client.api.build(
             path=str(self.executor_dir),
@@ -59,14 +65,16 @@ class ContainerManager:
         )
         for chunk in stream:
             if "stream" in chunk:
-                print(chunk["stream"], end="")
+                logger.debug(chunk["stream"].rstrip())
 
             elif "error" in chunk:
+                logger.error("Image build error: %s", chunk["error"])
                 raise RuntimeError(chunk["error"])
         try:
             os.remove(self.requirements_file)
         except OSError:
             pass
+        logger.info("Image build completed %s", self.image_tag)
 
     def execute(
         self, curr_attempt: int, deps: str, payload: ExecutorTaskPayload
@@ -75,23 +83,33 @@ class ContainerManager:
         attempt = curr_attempt
         succeeded = False
         for attempt in range(curr_attempt, max_retries + 1):
-            print(f"Attempt {attempt + 1} / {max_retries + 1}")
+            logger.info(
+                "Task %s attempt %d/%d",
+                payload.id,
+                attempt + 1,
+                max_retries + 1,
+            )
             try:
                 exit_code = self._run_container(deps, payload)
                 if exit_code == 0:
                     succeeded = True
                     break
                 else:
+                    logger.warning(
+                        "Task %s exited with code %d", payload.id, exit_code
+                    )
                     raise TimeoutError(
                         "Timeout Exceeded, Consider increase timeout"
                     )
             except (Exception, KeyboardInterrupt, TimeoutError) as exc:
-                print(f"Execution error: {exc}")
+                logger.warning(
+                    "Execution error for task %s: %s", payload.id, exc
+                )
                 if attempt < max_retries:
-                    print("\n Retrying in 0.5 seconds")
+                    logger.info("\n Retrying in 0.5 seconds")
                     time.sleep(0.5)
         if attempt == max_retries:
-            print("Maximum retries exceeded")
+            logger.error("Task %s failed after maximum retries", payload.id)
         return succeeded
 
     def _run_container(
@@ -102,7 +120,11 @@ class ContainerManager:
         if not self._ensure_image():
             self.build_image(deps)
         payload_json = payload.model_dump_json()
-
+        logger.info(
+            "Starting container for task %s (image: %s)",
+            payload.id,
+            self.image_tag,
+        )
         container = self.client.containers.run(
             image=self.image_tag,
             command=[
@@ -122,11 +144,8 @@ class ContainerManager:
             network_mode="none",
         )
 
-        print("task started:", payload.id)
-
         def stream_logs():
             try:
-                # Use attach() for real-time streaming instead of logs()
                 output = container.attach(
                     stream=True, logs=True, stdout=True, stderr=True
                 )
@@ -149,10 +168,10 @@ class ContainerManager:
             requests.exceptions.ConnectionError,
             KeyboardInterrupt,
         ):
-            print(
-                "\nContainer exceeded the limit of "
-                f"{payload.config.resources.timeout_seconds}s."
-                " Consider Increasing Timeout"
+            logger.warning(
+                "Task %s container exceeded timeout of %ds. Killing Container",
+                payload.id,
+                payload.config.resources.timeout_seconds,
             )
             try:
                 container.kill()

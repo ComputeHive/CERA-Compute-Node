@@ -2,13 +2,16 @@ import asyncio
 import os
 
 import aiohttp
+
 from app.config import app_config
 from app.constants import ENDPOINTS
 from app.core.task_service import TaskService
 from app.enums import EndpointsEnum
+from app.executor.utils.logging_config import get_logger
 from app.models import Heartbeat
 from app.utils.lib import Metrics
 
+logger = get_logger(__name__)
 HEARTBEAT_PERIOD = 30
 
 
@@ -34,6 +37,7 @@ class HeartbeatService:
             assigned_tasks=self._task_service.assigned_tasks,
         )
         try:
+            logger.info("Sending Heartbeat to Coordinator")
             resp = await self._session.post(
                 ENDPOINTS[EndpointsEnum.HEARTBEAT_ENDPOINT],
                 json=payload.model_dump_json(),
@@ -41,4 +45,4 @@ class HeartbeatService:
             )
             resp.raise_for_status()
         except aiohttp.ClientError as exc:
-            print(f"[Heartbeat] POST failed: {exc}")
+            logger.exception("Heartbeat failed: %s", exc)

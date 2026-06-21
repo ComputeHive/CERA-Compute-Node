@@ -1,12 +1,18 @@
+from re import search
 from typing import Any, Dict, List, Optional
+from urllib.parse import unquote, urlparse
 
 from storage3.types import SignedUploadURL
 from supabase import Client, create_client
 
 from app.config import app_config
+from app.executor.utils.logging_config import get_logger
 
 UNFINISHED_TASKS_BUCKET = "CERA_NODES"
 FINISHED_NODES_BUCKET = "NODE_1_OUTPUT"
+BUCKET_NAME_RE = r"/object/(?:upload/sign| sign | public)?/?([^/]+)/(.+)"
+
+logger = get_logger(__name__)
 
 
 class SupabaseBlobStorage:
@@ -14,12 +20,25 @@ class SupabaseBlobStorage:
     def __init__(self, supabase_client: Client):
         self.client = supabase_client
 
+    @staticmethod
+    def _parse_bucket_and_object(url: str) -> tuple[str, str]:
+        path = urlparse(url).path
+        match = search(BUCKET_NAME_RE, path)
+        if not match:
+            logger.error(
+                "Couldn't parse bucket and object names from upload url"
+            )
+            raise
+        bucket_name, object_name = match.group(1), unquote(match.group(2))
+        return bucket_name, object_name
+
     def create_bucket(
         self,
         bucket_id: str,
         bucket_name: str,
         options: Optional[Dict[str, Any]] = None,
     ) -> Any:
+
         return self.client.storage.create_bucket(
             id=bucket_id, name=bucket_name, options=options
         )
@@ -31,19 +50,23 @@ class SupabaseBlobStorage:
         data: bytes,
         options: Optional[Dict[str, Any]] = None,
     ) -> Any:
+        logger.info("Uploading %s to bucket %s", object_name, bucket_name)
         return self.client.storage.from_(bucket_name).upload(
             path=object_name, file=data, file_options=options
         )
 
     def download(self, bucket_name: str, object_name: str) -> bytes:
+        logger.info("Downloading %s from bucket %s", object_name, bucket_name)
         return self.client.storage.from_(bucket_name).download(object_name)
 
     def delete_object(self, bucket_name: str, object_name: str) -> Any:
+        logger.info("Deleting %s from bucket %s", object_name, bucket_name)
         return self.client.storage.from_(bucket_name).remove([object_name])
 
     def generate_presigned_url(
         self, bucket_name: str, object_name: str, expires_in: int = 3600
     ) -> str:
+        logger.info("Generating presigned url %s", object_name)
         response = self.client.storage.from_(bucket_name).create_signed_url(
             path=object_name, expires_in=expires_in
         )
@@ -73,6 +96,9 @@ class SupabaseBlobStorage:
         self, bucket_name: str, file_name: str, file_bytes: bytes
     ) -> str:
         if self.file_exists(bucket_name, file_name):
+            logger.info(
+                "File %s already exists, deleting before uploading", file_name
+            )
             self.delete_object(bucket_name, file_name)
         try:
             self.upload(bucket_name, file_name, file_bytes)
@@ -81,7 +107,7 @@ class SupabaseBlobStorage:
             try:
                 self.delete_object(bucket_name, file_name)
             except Exception as err:
-                print(f"Rollback failed for {file_name}: {err}")
+                logger.error(f"Rollback failed for {file_name}: {err}")
             raise
 
 

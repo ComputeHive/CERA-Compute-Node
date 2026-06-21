@@ -93,3 +93,11 @@ def task_completed(task_id: str, price: float) -> Message:
             "message": f"{task_id} completed. Price: {price}",
         },
     )
+
+
+def calculate_price(
+    delta_time_in_sec, cpu_cores: float, disk_mb: float, ram_mb: float
+):
+    return (
+        cpu_cores * 0.4 + ram_mb * 0.25 + disk_mb * 0.1
+    ) * delta_time_in_sec
