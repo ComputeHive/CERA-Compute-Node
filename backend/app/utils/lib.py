@@ -13,12 +13,12 @@ class Metrics:
     @staticmethod
     def _disk_usage() -> float:
         free_bytes = psutil.disk_usage("/").free
-        return round(free_bytes / (1024 ** 2), 2)
+        return round(free_bytes / (1024**2), 2)
 
     @staticmethod
     def _memory_usage() -> float:
         free_bytes = psutil.virtual_memory().available
-        return round(free_bytes / (1024 ** 2), 2)
+        return round(free_bytes / (1024**2), 2)
 
     @staticmethod
     def collect_metrics() -> dict:
@@ -59,9 +59,17 @@ def task_completed(task_id: str, price: float) -> Message:
     )
 
 
-def calculate_price(
-    delta_time_in_sec, cpu_cores: float, disk_mb: float, ram_mb: float
-):
-    return (
+_COMPUTE_WEI_PER_UNIT = 10**17
+
+
+def calculate_compute_price(
+    duration_seconds: float,
+    cpu_cores: int,
+    ram_mb: int,
+    disk_mb: int,
+) -> int:
+
+    units = (
         cpu_cores * 0.4 + ram_mb * 0.025 + disk_mb * 0.001
-    ) * delta_time_in_sec
+    ) * duration_seconds
+    return int(units * _COMPUTE_WEI_PER_UNIT)
