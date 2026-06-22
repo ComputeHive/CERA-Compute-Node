@@ -1,8 +1,7 @@
 from pathlib import Path
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
 from app.executor.models.task import TaskTypeEnum
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -21,7 +20,9 @@ class Settings(BaseSettings):
     COORD_AUTH_TOKEN: str = ""
 
     def KEYSTORE_DIR(self) -> str:
-        return f"~/Desktop/Compute_Node_{self.NODE_ID}/keystore"
+        return str(
+            Path(f"~/Desktop/Compute_Node_{self.NODE_ID}/keystore").absolute()
+        )
 
     @property
     def state_dir(self) -> str:

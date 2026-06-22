@@ -3,9 +3,6 @@ import asyncio
 
 import aiohttp
 import uvicorn
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-
 from app.api.routes import tools, vm
 from app.config import app_config
 from app.core.services.heartbeat import HeartbeatService
@@ -13,6 +10,8 @@ from app.core.task_service import TaskService
 from app.observer import MessageObserver, message_observer
 from app.utils.key_exchange import bootstrap_key_exchange
 from app.utils.lib import Metrics
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title=app_config.APP_NAME)
 app.include_router(tools.router, prefix="/api")
@@ -46,12 +45,11 @@ class Agent:
     async def start(self) -> None:
         print("Login during 15 seconds")
         await asyncio.sleep(15)
-        observer = message_observer
         async with aiohttp.ClientSession() as session:
-            task_service = TaskService(session, observer)
+            task_service = TaskService(session, message_observer)
             await bootstrap_key_exchange(session)
             tasks = [
-                asyncio.create_task(MetricsSender(observer).run()),
+                asyncio.create_task(MetricsSender(message_observer).run()),
                 asyncio.create_task(
                     HeartbeatService(session, task_service).run()
                 ),

@@ -114,12 +114,6 @@ class ContainerManager:
 
     @staticmethod
     def _to_container_path(p: str) -> str:
-        """Translate a host path to its POSIX form inside the Linux container.
-
-        On Windows the host paths look like ``F:\\tmp\\Cera_downloads\\<id>``;
-        a Linux container cannot use a drive-qualified, backslash path, so we
-        drop the drive and normalise separators -> ``/tmp/Cera_downloads/<id>``.
-        """
         if not p:
             return p
         _, rest = os.path.splitdrive(p)
@@ -128,12 +122,7 @@ class ContainerManager:
     def _build_container_payload(
         self, payload: ExecutorTaskPayload
     ) -> tuple[ExecutorTaskPayload, dict]:
-        """Return a payload + volumes dict with container-side POSIX paths.
 
-        The volume *source* keys stay as the original host paths (Docker
-        Desktop accepts Windows paths there); only the container bind targets
-        and the path fields the executor reads are POSIX-translated.
-        """
         run_volumes = {
             host: {**spec, "bind": self._to_container_path(spec["bind"])}
             for host, spec in payload.config.volumes.items()

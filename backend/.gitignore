@@ -10,3 +10,4 @@ scripts/old/
 scripts/test.sh
 logs/**
 *.txt
+*.xml

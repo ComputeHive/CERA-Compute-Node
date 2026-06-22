@@ -77,7 +77,7 @@ function TaskRow({ task: { id, price, status, upTime } }: JobRowProps): React.JS
   return (
     <div className="flex items-center justify-between w-full p-2 border-b border-default">
       <p className="text-lg w-1/4">{id}</p>
-      <p className="text-lg w-1/4">{price.toFixed(3)} $</p>
+      <p className="text-lg w-1/4">{Number(price.toFixed(3)) / 1e18} ETH</p>
       <p className="text-lg w-1/4">{humanizeTimedelta(upTime)}</p>
       <p className="text-lg w-1/4">{status}</p>
     </div>

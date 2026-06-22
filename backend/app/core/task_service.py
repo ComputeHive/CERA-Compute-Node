@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -29,7 +29,7 @@ from app.models import (
 from app.observer import MessageObserver
 from app.utils.code_extractor import CodeExtractor
 from app.utils.input_resolver import InputResolver
-from app.utils.lib import calculate_price
+from app.utils.lib import calculate_compute_price
 from app.utils.supabase_storage import FINISHED_NODES_BUCKET, supabase_storage
 from app.utils.task_parser import TaskParser
 
@@ -164,7 +164,12 @@ class TaskService:
 
             started_at = datetime.now(timezone.utc)
             success, ended_at = await asyncio.to_thread(
-                self._run_timed, task, code_path, input_files, inputs, parent_dir
+                self._run_timed,
+                task,
+                code_path,
+                input_files,
+                inputs,
+                parent_dir,
             )
             if success:
                 output_links = await asyncio.to_thread(
@@ -201,7 +206,7 @@ class TaskService:
         inputs,
         parent_dir: Path,
     ) -> tuple[bool, datetime]:
-        """Thin wrapper around _run that also returns the wall-clock end time."""
+
         success = self._run(task, code_path, input_files, inputs, parent_dir)
         return success, datetime.now(timezone.utc)
 
@@ -290,7 +295,7 @@ class TaskService:
                 delta = end_time - start_time
                 task_record = TaskRecord(
                     task_id=str(payload.id),
-                    price=calculate_price(
+                    price=calculate_compute_price(
                         float(delta.total_seconds()),
                         payload.config.resources.cpu_cores,
                         payload.config.resources.disk_mb,
@@ -310,7 +315,7 @@ class TaskService:
 
         task_record = TaskRecord(
             task_id=str(payload.id),
-            price=calculate_price(
+            price=calculate_compute_price(
                 float(delta.total_seconds()),
                 payload.config.resources.cpu_cores,
                 payload.config.resources.disk_mb,
