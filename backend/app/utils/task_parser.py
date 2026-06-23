@@ -8,6 +8,10 @@ logger = get_logger(__name__)
 
 
 class TaskParser:
+    @staticmethod
+    def parse_dict(raw: dict) -> TaskModel:
+        task = TaskModel.model_validate(raw)
+        return task
 
     @staticmethod
     def parse_file(file_path: str) -> TaskModel:

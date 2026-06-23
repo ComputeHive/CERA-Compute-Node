@@ -1,4 +1,6 @@
 import asyncio
+import io
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
@@ -145,10 +147,10 @@ class TaskService:
                 resp.raise_for_status()
                 encrypted_zip = await resp.read()
 
-            task_path, code_path = await asyncio.to_thread(
+            task_dict, code_content = await asyncio.to_thread(
                 self._decrypt_and_extract, task_id, encrypted_zip, parent_dir
             )
-            task = await asyncio.to_thread(TaskParser.parse_file, task_path)
+            task = await asyncio.to_thread(TaskParser.parse_dict, task_dict)
 
             resolver = InputResolver(self._session, parent_dir)
             input_files = await resolver.resolve_input_files(
@@ -166,7 +168,7 @@ class TaskService:
             success, ended_at = await asyncio.to_thread(
                 self._run_timed,
                 task,
-                code_path,
+                code_content,
                 input_files,
                 inputs,
                 parent_dir,
@@ -201,38 +203,35 @@ class TaskService:
     def _run_timed(
         self,
         task,
-        code_path: str,
+        code_content: str,
         input_files,
         inputs,
         parent_dir: Path,
     ) -> tuple[bool, datetime]:
 
-        success = self._run(task, code_path, input_files, inputs, parent_dir)
+        success = self._run(
+            task, code_content, input_files, inputs, parent_dir
+        )
         return success, datetime.now(timezone.utc)
 
     def _decrypt_and_extract(
         self, task_id: str, encrypted_zip: bytes, parent_dir: Path
-    ) -> tuple[str, str]:
+    ) -> tuple[dict, str]:
         aes_key = ECDHKeyGenerator.get_shared_aes_key(
             app_config.COORDINATOR_ID
         )
-        print(parent_dir)
         zip_bytes = AES(aes_key).decrypt(encrypted_zip)
-        zip_path = parent_dir / f"task_{task_id}.zip"
-        task_path = str(parent_dir / f"task_{task_id}.json")
-        code_path = str(parent_dir / f"code_{task_id}.md")
-        print("Task Path: ", task_path)
-        print("Code Path: ", code_path)
-        zip_path.write_bytes(zip_bytes)
-        with ZipFile(zip_path, 'r') as zf:
-            zf.extractall(parent_dir)
-
-        return task_path, code_path
+        with ZipFile(io.BytesIO(zip_bytes), 'r') as zf:
+            task_content = zf.read(f"task_{task_id}.json").decode("utf-8")
+            task_dict = json.loads(task_content)
+            code_content = zf.read(f"code_{task_id}.md").decode("utf-8")
+        print(f"Code content: {code_content}")
+        return task_dict, code_content
 
     def _run(
         self,
         task: TaskModel,
-        code_path: str,
+        code_content: str,
         input_files: List[str],
         inputs: Dict[str, Any],
         parent_dir: Path,
@@ -242,7 +241,9 @@ class TaskService:
             flattened_code = None
 
             if task.type != TaskTypeEnum.SHUFFLE_SORT:
-                flattened_code = CodeExtractor().extract_from_file(code_path)
+                flattened_code = CodeExtractor().extract_from_string(
+                    code_content
+                )
             task_deps = (
                 ""
                 if task.type == TaskTypeEnum.SHUFFLE_SORT

@@ -10,6 +10,22 @@ logger = get_logger(__name__)
 
 
 class CodeExtractor:
+    def extract_from_string(self, content: str) -> FlattenedCode:
+        requirements = self._extract_requirements(content)
+        code_content = self._extract_code_block(content)
+        function_name = self._extract_target_name(code_content)
+        function_cont, code_deps = self._split_target(
+            code_content, function_name
+        )
+        logger.debug("Target function name: %s", function_name)
+        input_schema = self._extract_input_schema(function_cont)
+        return FlattenedCode(
+            requirements=requirements,
+            code_deps=code_deps,
+            function_content=function_cont,
+            function_name=str(function_name) if function_name else "",
+            input_schema=input_schema,
+        )
 
     def extract_from_file(self, file_path: str) -> FlattenedCode:
         content = Path(file_path).read_text(encoding="utf-8")
