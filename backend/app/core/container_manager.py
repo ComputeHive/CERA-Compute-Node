@@ -5,7 +5,6 @@ from hashlib import sha256
 from pathlib import Path
 
 import docker
-import requests
 from docker.errors import ImageNotFound
 
 from app.executor.models.task import ExecutorTaskPayload
@@ -110,6 +109,7 @@ class ContainerManager:
                     time.sleep(0.5)
         if attempt == max_retries:
             logger.error("Task %s failed after maximum retries", payload.id)
+            return False
         return succeeded
 
     @staticmethod
@@ -149,9 +149,6 @@ class ContainerManager:
         if not self._ensure_image():
             self.build_image(deps)
 
-        # os.getuid/getgid are Unix-only. On Windows hosts (Docker Desktop
-        # running Linux containers) the host paths are not valid container
-        # paths, so translate them; on Unix the host IS the container fs.
         is_unix = hasattr(os, "getuid")
         if is_unix:
             container_payload, run_volumes = payload, payload.config.volumes
@@ -206,11 +203,7 @@ class ContainerManager:
                 timeout=payload.config.resources.timeout_seconds
             )
             return int(result.get("StatusCode", 2))
-        except (
-            requests.exceptions.ReadTimeout,
-            requests.exceptions.ConnectionError,
-            KeyboardInterrupt,
-        ):
+        except Exception:
             logger.warning(
                 "Task %s container exceeded timeout of %ds. Killing Container",
                 payload.id,
@@ -218,10 +211,8 @@ class ContainerManager:
             )
             try:
                 container.kill()
-                result = container.wait(timeout=0.25)
+                result = container.wait(timeout=3)
             except Exception:
                 pass
-            finally:
-                return 137
         finally:
             stream_thread.join(timeout=5)

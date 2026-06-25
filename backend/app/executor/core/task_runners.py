@@ -159,6 +159,7 @@ class TaskManager:
         rows = FileHandler.stream_rows_multiple_files(
             input_files, input_params, state.next_row_to_write, task_type
         )
+        print("Rows 're Loaded")
         self._executor.run_micro_batches(
             rows, output_path, state.total, flattened_code, state
         )

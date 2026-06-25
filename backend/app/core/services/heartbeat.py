@@ -12,7 +12,7 @@ from app.models import Heartbeat
 from app.utils.lib import Metrics
 
 logger = get_logger(__name__)
-HEARTBEAT_PERIOD = 30
+HEARTBEAT_PERIOD = 15
 
 
 class HeartbeatService:
@@ -25,24 +25,21 @@ class HeartbeatService:
     async def run(self) -> None:
         while True:
             await asyncio.sleep(HEARTBEAT_PERIOD)
-            await self._tick()
-
-    async def _tick(self) -> None:
-        metrics = await asyncio.to_thread(Metrics.collect_metrics)
-        payload: Heartbeat = Heartbeat(
-            cpu_load=metrics["CPU"],
-            cpu_cores=(os.cpu_count() or 1),
-            available_disk_mb=metrics["Disk"],
-            available_ram_mb=metrics["RAM"],
-            assigned_tasks=self._task_service.assigned_tasks,
-        )
-        try:
-            logger.info("Sending Heartbeat to Coordinator")
-            resp = await self._session.post(
-                ENDPOINTS[EndpointsEnum.HEARTBEAT_ENDPOINT],
-                json=payload.model_dump(),
-                headers=app_config.HEADERS,
+            metrics = await asyncio.to_thread(Metrics.collect_metrics)
+            payload: Heartbeat = Heartbeat(
+                cpu_load=metrics["CPU"],
+                cpu_cores=(os.cpu_count() or 1),
+                available_disk_mb=metrics["Disk"],
+                available_ram_mb=metrics["RAM"],
+                assigned_tasks=self._task_service.assigned_tasks,
             )
-            resp.raise_for_status()
-        except aiohttp.ClientError as exc:
-            logger.exception("Heartbeat failed: %s", exc)
+            try:
+                logger.info("Sending Heartbeat to Coordinator")
+                resp = await self._session.post(
+                    ENDPOINTS[EndpointsEnum.HEARTBEAT_ENDPOINT],
+                    json=payload.model_dump(),
+                    headers=app_config.HEADERS,
+                )
+                resp.raise_for_status()
+            except aiohttp.ClientError as exc:
+                logger.exception("Heartbeat failed: %s", exc)

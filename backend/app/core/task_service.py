@@ -66,7 +66,7 @@ class TaskService:
     async def _poll_once(self) -> None:
         resp = await self._session.get(
             ENDPOINTS[EndpointsEnum.RECEIVE_TASKS_ENDPOINT],
-            params={"tasks_number": 3},
+            params={"tasks_number": 1},
             headers=app_config.HEADERS,
         )
         resp.raise_for_status()
@@ -221,11 +221,17 @@ class TaskService:
             app_config.COORDINATOR_ID
         )
         zip_bytes = AES(aes_key).decrypt(encrypted_zip)
+        code_content = ""
         with ZipFile(io.BytesIO(zip_bytes), 'r') as zf:
             task_content = zf.read(f"task_{task_id}.json").decode("utf-8")
             task_dict = json.loads(task_content)
-            code_content = zf.read(f"code_{task_id}.md").decode("utf-8")
-        print(f"Code content: {code_content}")
+
+            code_filename = f"code_{task_id}.md"
+
+            if code_filename in zf.namelist():
+                code_content = zf.read(code_filename).decode("utf-8")
+                print(f"Code content: {code_content}")
+
         return task_dict, code_content
 
     def _run(
@@ -239,7 +245,7 @@ class TaskService:
         try:
 
             flattened_code = None
-
+            print(task)
             if task.type != TaskTypeEnum.SHUFFLE_SORT:
                 flattened_code = CodeExtractor().extract_from_string(
                     code_content

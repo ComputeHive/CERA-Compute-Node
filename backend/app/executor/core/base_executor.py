@@ -47,7 +47,7 @@ class BaseExecutor:
         write_buf: dict = {}
         next_to_flush = state.next_row_to_write
         submitted = next_to_flush
-
+        print("I'm inside the streaming runner")
         parent_path = Path(output_path).parent
         os.makedirs(parent_path, exist_ok=True)
         mode = "a" if state.next_row_to_write > 0 else "w"
