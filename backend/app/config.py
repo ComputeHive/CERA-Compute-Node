@@ -1,14 +1,14 @@
 from pathlib import Path
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
 from app.executor.models.task import TaskTypeEnum
+from dotenv import find_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     APP_NAME: str = "CERA COMPUTE NODE"
     model_config = SettingsConfigDict(
-        env_file=Path(__file__).with_name(".env")
+        env_file=find_dotenv(usecwd=False) or Path(__file__).with_name(".env")
     )
     volume_path: str = str(str(Path.home() / "cera_volume"))
     COORDINATOR_URL: str = ""
