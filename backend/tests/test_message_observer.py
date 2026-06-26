@@ -1,14 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-import pytest
-
 from app.models import TaskRecord, TaskStatusEnum
-from app.observer import MessageObserver
-
-
-@pytest.fixture
-def observer():
-    return MessageObserver()
 
 
 def test_update_metrics_adds_timestamp(observer):
