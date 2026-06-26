@@ -26,7 +26,6 @@ class ContainerManager:
             f.write(deps)
 
     def _calculate_hash_image(self):
-
         h = sha256()
         for path in sorted(self.executor_dir.rglob("*")):
             if (
@@ -65,7 +64,6 @@ class ContainerManager:
         for chunk in stream:
             if "stream" in chunk:
                 logger.debug(chunk["stream"].rstrip())
-
             elif "error" in chunk:
                 logger.error("Image build error: %s", chunk["error"])
                 raise RuntimeError(chunk["error"])
@@ -141,11 +139,7 @@ class ContainerManager:
         ]
         return container_payload, run_volumes
 
-    def _run_container(
-        self,
-        deps: str,
-        payload: ExecutorTaskPayload,
-    ) -> int:
+    def _run_container(self, deps: str, payload: ExecutorTaskPayload) -> int:
         if not self._ensure_image():
             self.build_image(deps)
 

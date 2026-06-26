@@ -289,7 +289,7 @@ class TestTaskServiceRunPaths:
         ):
             aes_cls.return_value.decrypt.return_value = zip_bytes
             parsed_task, code = service._decrypt_and_extract(
-                task_id, b"encrypted", Path("/tmp/task")
+                task_id, b"encrypted"
             )
 
         assert parsed_task["id"] == task_id

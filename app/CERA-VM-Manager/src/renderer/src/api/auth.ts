@@ -3,7 +3,7 @@ import { RegisterRequest } from '@renderer/schema/signup'
 import { Tinstance } from '@renderer/types'
 
 export const signupVM = async (node_cfg: Tinstance): Promise<{ status: string }> => {
-  const res = await fetch(`${window.apiConfig.baseUrl}/auth/signup`, {
+  const res = await fetch(`${import.meta.env.VITE_COMPUTE_NODE_API_URL}/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(node_cfg)
