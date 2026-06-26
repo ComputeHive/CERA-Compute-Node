@@ -195,12 +195,12 @@ class TaskService:
     def _decrypt_and_extract(
         self, task_id: str, encrypted_zip: bytes
     ) -> tuple[dict, str]:
-        aes_key = ECDHKeyGenerator.get_shared_aes_key(
-            app_config.COORDINATOR_ID
-        )
-        zip_bytes = AES(aes_key).decrypt(encrypted_zip)
+        # aes_key = ECDHKeyGenerator.get_shared_aes_key(
+            # app_config.COORDINATOR_ID
+        # )
+        # zip_bytes = AES(aes_key).decrypt(encrypted_zip)
         code_content = ""
-        with ZipFile(io.BytesIO(zip_bytes), 'r') as zf:
+        with ZipFile(io.BytesIO(encrypted_zip), 'r') as zf:
             task_content = zf.read(f"task_{task_id}.json").decode("utf-8")
             task_dict = json.loads(task_content)
             code_filename = f"code_{task_id}.md"

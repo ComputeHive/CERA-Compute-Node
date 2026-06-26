@@ -1,2 +1,5 @@
 docs/
 **/.env*
+Desktop/**
+Compute**/
+cera_volume/**

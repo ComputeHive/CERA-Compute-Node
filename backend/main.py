@@ -19,7 +19,7 @@ app.include_router(vm.router, prefix="/api/vm")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_headers=["*"],
     allow_methods=["*"],
 )
@@ -63,7 +63,7 @@ class Agent:
 
 
 async def main(port: int) -> None:
-    config = uvicorn.Config(app, host="localhost", port=port)
+    config = uvicorn.Config(app, host="0.0.0.0", port=port)
     server = uvicorn.Server(config)
 
     await asyncio.gather(

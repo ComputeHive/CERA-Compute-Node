@@ -11,3 +11,4 @@ scripts/test.sh
 logs/**
 *.txt
 *.xml
+.venv

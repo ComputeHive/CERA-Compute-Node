@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=find_dotenv(usecwd=False) or Path(__file__).with_name(".env")
     )
-    volume_path: str = str(str(Path.home() / "cera_volume"))
+    volume_path: str = str(Path.cwd() / "cera_volume")
     COORDINATOR_URL: str = ""
     HKDF_INFO: str = ""
     COORDINATOR_ID: str = ""
@@ -21,9 +21,7 @@ class Settings(BaseSettings):
     COORD_AUTH_TOKEN: str = ""
 
     def KEYSTORE_DIR(self) -> str:
-        return str(
-            Path.home() / f"Desktop/Compute_Node_{self.NODE_ID}/keystore"
-        )
+        return str(Path.cwd() / f"Compute_Node_{self.NODE_ID}" / "keystore")
 
     @property
     def state_dir(self) -> str:
