@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from app.executor.models.task import TaskTypeEnum
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.executor.models.task import TaskTypeEnum
 
 
 class Settings(BaseSettings):
@@ -9,7 +10,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=Path(__file__).with_name(".env")
     )
-    volume_path: str = str(Path("/tmp/Cera_downloads").absolute())
+    volume_path: str = str(str(Path.home() / "cera_volume"))
     COORDINATOR_URL: str = ""
     HKDF_INFO: str = ""
     COORDINATOR_ID: str = ""
@@ -21,7 +22,7 @@ class Settings(BaseSettings):
 
     def KEYSTORE_DIR(self) -> str:
         return str(
-            Path(f"~/Desktop/Compute_Node_{self.NODE_ID}/keystore").absolute()
+            Path.home() / f"Desktop/Compute_Node_{self.NODE_ID}/keystore"
         )
 
     @property
