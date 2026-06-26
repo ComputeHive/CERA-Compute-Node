@@ -1,11 +1,10 @@
 from typing import Optional, cast
 
+from app.config import app_config
+from app.core.services.keystore_service import KeystoreService
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-
-from app.config import app_config
-from app.core.services.keystore_service import KeystoreService
 
 
 class ECDHKeyGenerator:
@@ -56,18 +55,15 @@ class ECDHKeyGenerator:
         if party_has_key:
             return
 
-        # Generate a private key using the NIST P-256 curve
         curve = ec.SECP256R1()
         private_key = ec.generate_private_key(curve)
         public_key = private_key.public_key()
 
-        # Serialise private key (unencrypted PEM)
         priv_pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption(),
         )
-        # Serialise public key (SubjectPublicKeyInfo PEM)
         pub_pem = public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,

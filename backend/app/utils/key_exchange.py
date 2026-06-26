@@ -1,5 +1,4 @@
 import aiohttp
-
 from app.config import app_config
 from app.constants import ENDPOINTS
 from app.core.security.ecdh import ECDHKeyGenerator
@@ -21,7 +20,6 @@ async def bootstrap_key_exchange(session: aiohttp.ClientSession) -> None:
     timeout = aiohttp.ClientTimeout(total=10)
     logger.debug("My Public Key: %s", pub_pem.decode())
     try:
-        print(ENDPOINTS[EndpointsEnum.SEND_PUBLIC_KEY_ENDPOINT])
         await session.post(
             ENDPOINTS[EndpointsEnum.SEND_PUBLIC_KEY_ENDPOINT],
             json={
@@ -36,7 +34,6 @@ async def bootstrap_key_exchange(session: aiohttp.ClientSession) -> None:
             timeout=timeout,
         )
         body = await resp.json()
-        print(body)
         ECDHKeyGenerator.save_party_public_key(
             app_config.COORDINATOR_ID, body["public_key"].encode()
         )
