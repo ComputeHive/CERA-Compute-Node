@@ -1,8 +1,8 @@
-import { AppStatusEnum, TgetInstalledTools, TInstallTool, ToolStatusEnum } from '@renderer/types'
-import { TOOLS } from '@renderer/constants'
-import { useQuery } from '@tanstack/react-query'
 import { getInstalledTools } from '@renderer/api/installer'
+import { TOOLS } from '@renderer/constants'
 import { useAppStore } from '@renderer/store'
+import { AppStatusEnum, TgetInstalledTools, TInstallTool, ToolStatusEnum } from '@renderer/types'
+import { useQuery } from '@tanstack/react-query'
 type TuseDependenciesView = {
   tools: TgetInstalledTools
   isPending: boolean
@@ -23,7 +23,7 @@ export function useDependenciesView(): TuseDependenciesView {
     else {
       setAppStatus(AppStatusEnum.BUILDING_IMG)
       setInstallTool(installTool)
-    } // Here Comes Call of Build Image Endpoint
+    }
   }
   return {
     tools: dependenciesQuery.data,

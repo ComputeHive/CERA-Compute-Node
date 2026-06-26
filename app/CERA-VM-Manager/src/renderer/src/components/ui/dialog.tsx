@@ -1,7 +1,6 @@
 type DialogProps = {
   children: React.ReactNode
   open: boolean
-  //   setOpen: (arg: boolean) => void
 }
 export function Dialog({ children, open }: DialogProps): React.JSX.Element | null {
   if (!open) return null

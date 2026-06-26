@@ -24,14 +24,3 @@ export const getTasks = async (): Promise<TTasksResponse> => {
   })
   return (await res.json()) as TTasksResponse
 }
-// export const stopVM = async (node_index: string): Promise<TEndVMResponse> => {
-//   const res = await fetch(`${import.meta.env.VITE_COMPUTE_NODE_API_URL}/vm/nodes/${node_index}/stop`, {
-//     method: 'POST'
-//   })
-//   return (await res.json()) as TEndVMResponse
-// }
-
-// export const getAllInstances = async (): Promise<{ nodes: Tinstance[] }> => {
-//   const res = await fetch(`${import.meta.env.VITE_COMPUTE_NODE_API_URL}/vm/nodes`, { method: 'GET' })
-//   return (await res.json()) as { nodes: Tinstance[] }
-// }

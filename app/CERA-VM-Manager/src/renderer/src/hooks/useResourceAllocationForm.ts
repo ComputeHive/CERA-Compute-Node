@@ -7,7 +7,6 @@ import { BaseSyntheticEvent } from 'react'
 import { FieldErrors, useForm, UseFormRegister, UseFormWatch } from 'react-hook-form'
 
 type TuseResourceAllocationForm = {
-  // info: SystemInfo | null
   register: UseFormRegister<InstanceResources>
   watch: UseFormWatch<InstanceResources>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
