@@ -78,8 +78,6 @@ class NormalShuffler(BaseShuffler):
         return super().assign_partition(key)
 
 
-# TODO: Change the Shuffling Algorithm for Balancing
-# TODO: Save the partition assignment in temp file for error handling
 class PartitionBalancingShuffler(BaseShuffler):
     def __init__(
         self,

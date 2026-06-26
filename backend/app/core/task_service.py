@@ -7,7 +7,6 @@ from typing import Any, Dict, List
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import aiohttp
-
 from app.config import app_config
 from app.constants import ENDPOINTS
 from app.core.container_manager import ContainerManager
@@ -206,7 +205,6 @@ class TaskService:
             code_filename = f"code_{task_id}.md"
             if code_filename in zf.namelist():
                 code_content = zf.read(code_filename).decode("utf-8")
-                print(f"Code content: {code_content}")
         return task_dict, code_content
 
     def _run(

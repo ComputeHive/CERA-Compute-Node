@@ -19,7 +19,7 @@ app.include_router(vm.router, prefix="/api/vm")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_headers=["*"],
     allow_methods=["*"],
 )
@@ -35,7 +35,6 @@ class MetricsSender:
     async def run(self) -> None:
         while True:
             data = await asyncio.to_thread(Metrics.collect_metrics)
-            print(data)
             self._observer.update_metrics(data)
             await asyncio.sleep(METRICS_INTERVAL)
 

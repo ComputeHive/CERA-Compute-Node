@@ -6,8 +6,6 @@ from pydantic import BaseModel, Field, HttpUrl, TypeAdapter, model_validator
 
 from .flattenedcode import FlattenedCode
 
-# TODO: Move Unrelated out of executor package
-
 
 class TaskTypeEnum(str, Enum):
     FUNCTION_WITH_FILES = "function_with_files"
@@ -15,14 +13,12 @@ class TaskTypeEnum(str, Enum):
     MAP = "map"
     SHUFFLE_SORT = "shuffle_sort"
     REDUCE = "reduce"
-    COMBINER = "combiner"
 
 
 TASK_TYPES_WITH_FILES = frozenset(
     {
         TaskTypeEnum.MAP,
         TaskTypeEnum.REDUCE,
-        TaskTypeEnum.COMBINER,
         TaskTypeEnum.FUNCTION_WITH_FILES,
     }
 )
@@ -138,7 +134,6 @@ class FileProcessingState(BaseTaskState):
         TaskTypeEnum.FUNCTION_WITH_FILES,
         TaskTypeEnum.MAP,
         TaskTypeEnum.REDUCE,
-        TaskTypeEnum.COMBINER,
     ]
     next_row_to_write: int = 0
     total: int = 0

@@ -3,6 +3,7 @@ from typing import Any, List, Optional
 
 from ..models.flattenedcode import FlattenedCode
 from ..models.task import (
+    TASK_TYPES_WITH_FILES,
     FileProcessingState,
     FunctionInputState,
     ShuffleSortState,
@@ -12,13 +13,6 @@ from ..models.task import (
 from ..utils.file_handler import FileHandler
 from ..utils.state_manager import StateManager, StateWriter
 from .base_executor import BaseExecutor
-
-_STREAMING_TYPES = (
-    TaskTypeEnum.FUNCTION_WITH_FILES,
-    TaskTypeEnum.MAP,
-    TaskTypeEnum.COMBINER,
-    TaskTypeEnum.REDUCE,
-)
 
 
 class TaskManager:
@@ -39,7 +33,7 @@ class TaskManager:
         existing = self._state_manager.load()
         if existing is not None:
             return existing
-        if task_type in _STREAMING_TYPES:
+        if task_type in TASK_TYPES_WITH_FILES:
             return FileProcessingState(
                 task_type=task_type,
                 retry=0,
@@ -119,7 +113,7 @@ class TaskManager:
         num_of_partitions: Optional[int],
         balance_partitions: bool,
     ) -> Any:
-        if task_type in _STREAMING_TYPES:
+        if task_type in TASK_TYPES_WITH_FILES:
             return self._run_streaming(
                 task_type,
                 state,
@@ -151,15 +145,10 @@ class TaskManager:
         flattened_code: Optional[FlattenedCode],
         input_params: Optional[dict],
     ) -> None:
-        assert isinstance(state, FileProcessingState)
-        assert output_path is not None
-        assert flattened_code is not None
-        assert input_params is not None
-        assert input_files is not None
+
         rows = FileHandler.stream_rows_multiple_files(
             input_files, input_params, state.next_row_to_write, task_type
         )
-        print("Rows 're Loaded")
         self._executor.run_micro_batches(
             rows, output_path, state.total, flattened_code, state
         )
@@ -172,10 +161,7 @@ class TaskManager:
         num_of_partitions: Optional[int],
         balance_partitions: bool,
     ) -> None:
-        assert isinstance(state, ShuffleSortState)
-        assert output_path is not None
-        assert input_files is not None
-        assert num_of_partitions is not None
+
         self._executor.run_shuffle_sort(
             num_of_partitions,
             input_files,
